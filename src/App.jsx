@@ -6,7 +6,7 @@ import {
   Trash2, Edit2, ExternalLink, Search, 
   CheckCircle2, AlertCircle, Loader2, X, CalendarDays, Settings,
   ArrowUpDown, ArrowUp, ArrowDown, RotateCcw, GripVertical,
-  Play, Pause, ArrowRight, Check, Menu
+  Play, Pause, ArrowRight, Check, Menu, Download
 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 
@@ -60,14 +60,19 @@ const formatDate = (dateString) => {
 
 // --- Components ---
 
-const BillingCard = ({ label, count, hours, onEdit }) => (
+const BillingCard = ({ label, count, hours, onEdit, onExport }) => (
   <div className="billing-card" style={{ background: 'linear-gradient(135deg, #4f46e5 0%, #312e81 100%)', borderRadius: '16px', padding: '24px', color: 'white', boxShadow: '0 10px 15px -3px rgba(79, 70, 229, 0.3)', position: 'relative' }}>
-    <button onClick={onEdit} style={{ position: 'absolute', top: '20px', right: '20px', background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: '50%', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'white' }} title="Edit Billing Cycle">
-      <Settings size={16} />
-    </button>
+    <div style={{ position: 'absolute', top: '20px', right: '20px', display: 'flex', gap: '8px' }}>
+      <button onClick={onExport} style={{ background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: '50%', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'white' }} title="Export CSV">
+        <Download size={16} />
+      </button>
+      <button onClick={onEdit} style={{ background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: '50%', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'white' }} title="Edit Billing Cycle">
+        <Settings size={16} />
+      </button>
+    </div>
     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '16px' }}>
       <div><p style={{ fontSize: '13px', fontWeight: '600', opacity: 0.9, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Current Billing Cycle</p><p style={{ fontSize: '14px', fontWeight: 'bold', marginTop: '4px', color: '#e0e7ff' }}>{label}</p></div>
-      <CalendarDays size={24} style={{ opacity: 0.8, marginRight: '40px' }} />
+      <CalendarDays size={24} style={{ opacity: 0.8, marginRight: '80px' }} />
     </div>
     <div className="billing-stats-grid">
       <div><h3 style={{ fontSize: '32px', fontWeight: '800', lineHeight: '1' }}>{count}</h3><p style={{ fontSize: '13px', opacity: 0.8, marginTop: '4px' }}>Files Completed</p></div>
@@ -218,23 +223,65 @@ export default function App() {
 
   // --- AUTO NAMING HELPER ---
   const generateAutoName = (existingJobs) => {
-    // Filter for files that start with "Unnamed File"
     const unnamedDocs = existingJobs.filter(j => j.file_name.startsWith("Unnamed File"));
     
     if (unnamedDocs.length === 0) {
         return "Unnamed File 1";
     }
 
-    // Extract numbers: "Unnamed File 5" -> 5. "Unnamed File" -> 1.
     const nums = unnamedDocs.map(j => {
         const match = j.file_name.match(/Unnamed File (\d+)/);
         if (match) return parseInt(match[1]);
         if (j.file_name === "Unnamed File") return 1;
-        return 0; // Fallback
+        return 0; 
     });
 
     const maxNum = Math.max(...nums);
     return `Unnamed File ${maxNum + 1}`;
+  };
+
+  // --- EXPORT CSV LOGIC ---
+  const downloadBillingCSV = () => {
+    const cycle = getBillingCycle();
+    const cycleJobs = jobs.filter(j => { 
+        const d = new Date(j.date); 
+        d.setHours(0,0,0,0);
+        const s = new Date(cycle.start); s.setHours(0,0,0,0);
+        const e = new Date(cycle.end); e.setHours(23,59,59,999);
+        // Assuming we only want completed jobs for billing, but you can remove the status check if you want ALL files in that date range
+        return d >= s && d <= e; 
+    });
+
+    if (cycleJobs.length === 0) {
+        alert("No files found for this billing cycle.");
+        return;
+    }
+
+    const headers = ["Date", "File Name", "Client", "Duration", "Status", "Link", "Notes"];
+    
+    const rows = cycleJobs.map(job => [
+        job.date,
+        `"${job.file_name.replace(/"/g, '""')}"`, // Escape quotes in CSV
+        job.client,
+        formatDuration(job.total_seconds),
+        job.status,
+        job.link || "",
+        `"${(job.notes || "").replace(/"/g, '""')}"`
+    ]);
+
+    const csvContent = [
+        headers.join(","),
+        ...rows.map(row => row.join(","))
+    ].join("\n");
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", `Billing_Cycle_${cycle.start.toISOString().split('T')[0]}_to_${cycle.end.toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   // --- TIMER ACTION HANDLERS ---
@@ -246,7 +293,6 @@ export default function App() {
     setTimerRunning(!timerRunning);
   };
 
-  // STEP 1: FINISH FR
   const handleFinishFR = async () => {
     if (totalTat === 0) return;
     setTimerRunning(false); 
@@ -260,7 +306,6 @@ export default function App() {
     const m = Math.floor((audioSeconds % 3600) / 60);
     const s = audioSeconds % 60;
 
-    // --- AUTO NUMBERING LOGIC ---
     let finalName = timerData.file_name.trim();
     if (!finalName) {
         finalName = generateAutoName(jobs);
@@ -291,7 +336,6 @@ export default function App() {
     setLoading(false);
   };
 
-  // STEP 2: FINISH SV
   const handleFinishSV = async () => {
     if (!activeJobId) return alert("Error: No active job found.");
     setTimerRunning(false);
@@ -331,7 +375,6 @@ export default function App() {
     else { m = parts[0]; }
     const totalSeconds = (h * 3600) + (m * 60) + s;
 
-    // --- AUTO NUMBERING FOR MANUAL ENTRY ---
     let finalName = formData.file_name.trim();
     if (!finalName && !isEditing) {
         finalName = generateAutoName(jobs);
@@ -478,6 +521,7 @@ export default function App() {
                         count={cycleJobs.length} 
                         hours={formatDecimalHours(cycleSecs)} 
                         onEdit={() => { setTempBillingDate(billingStartDate); setShowBillingModal(true); }} 
+                        onExport={downloadBillingCSV}
                     />
                 </div>
                 
