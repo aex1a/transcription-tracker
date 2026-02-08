@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { supabase } from './supabase'; // Import the connection we just made
+import { supabase } from './supabase'; 
 import { 
   LayoutDashboard, Plus, List, 
   Trash2, Edit2, ExternalLink, Search, Moon, Sun,
-  CheckCircle2, Clock, AlertCircle, Loader2
+  CheckCircle2, Clock, AlertCircle, Loader2, X
 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 
@@ -62,7 +62,8 @@ export default function App() {
   
   // Form State
   const [formData, setFormData] = useState({
-    file_name: '', client: '', hours: 0, minutes: 0, 
+    file_name: '', client: '', 
+    timeString: '', // New field for the single input
     date: new Date().toISOString().split('T')[0], 
     link: '', notes: '', status: 'In Progress'
   });
@@ -91,18 +92,33 @@ export default function App() {
   }, [darkMode]);
 
   // --- Handlers ---
+  
+  // Helper to format 5:5 to 05:05
+  const padTime = (num) => num.toString().padStart(2, '0');
+
   const handleSave = async (e) => {
     e.preventDefault();
     setLoading(true);
 
-    const totalMinutes = (parseInt(formData.hours) || 0) * 60 + (parseInt(formData.minutes) || 0);
+    // Parse the Time String (HH:MM) back to numbers
+    let hours = 0;
+    let minutes = 0;
     
-    // Prepare data (match Supabase column names)
+    if (formData.timeString.includes(':')) {
+      const parts = formData.timeString.split(':');
+      hours = parseInt(parts[0]) || 0;
+      minutes = parseInt(parts[1]) || 0;
+    } else {
+      minutes = parseInt(formData.timeString) || 0;
+    }
+
+    const totalMinutes = (hours * 60) + minutes;
+    
     const payload = {
       file_name: formData.file_name,
       client: formData.client,
-      hours: formData.hours,
-      minutes: formData.minutes,
+      hours: hours,
+      minutes: minutes,
       date: formData.date,
       link: formData.link,
       notes: formData.notes,
@@ -118,11 +134,10 @@ export default function App() {
       if (error) alert('Error adding!');
     }
     
-    // Refresh Data
     await fetchJobs();
     
     // Reset Form
-    setFormData({ file_name: '', client: '', hours: 0, minutes: 0, date: new Date().toISOString().split('T')[0], link: '', notes: '', status: 'In Progress' });
+    setFormData({ file_name: '', client: '', timeString: '', date: new Date().toISOString().split('T')[0], link: '', notes: '', status: 'In Progress' });
     setIsEditing(null);
     setView('list');
   };
@@ -131,16 +146,18 @@ export default function App() {
     if (confirm('Delete this record permanently?')) {
       const { error } = await supabase.from('jobs').delete().eq('id', id);
       if (error) alert('Error deleting!');
-      else fetchJobs(); // Refresh list
+      else fetchJobs(); 
     }
   };
 
   const handleEdit = (job) => {
+    // Convert saved numbers back to "HH:MM" string for the input
+    const timeStr = `${padTime(job.hours)}:${padTime(job.minutes)}`;
+
     setFormData({ 
       file_name: job.file_name, 
       client: job.client, 
-      hours: job.hours, 
-      minutes: job.minutes, 
+      timeString: timeStr,
       date: job.date, 
       link: job.link, 
       notes: job.notes, 
@@ -148,6 +165,13 @@ export default function App() {
     });
     setIsEditing(job.id);
     setView('add');
+  };
+
+  // Specific handler to allow typing ":"
+  const handleTimeChange = (e) => {
+    // Allow numbers and colon only
+    const val = e.target.value.replace(/[^0-9:]/g, '');
+    setFormData({...formData, timeString: val});
   };
 
   // --- Calculations ---
@@ -280,68 +304,101 @@ export default function App() {
               </div>
             )}
 
-            {/* --- VIEW: ADD --- */}
+            {/* --- VIEW: ADD (Redesigned) --- */}
             {view === 'add' && (
-              <div className="max-w-4xl mx-auto">
-                <h2 className="text-3xl font-bold text-slate-900 dark:text-white mb-6">
-                  {isEditing ? 'Edit Entry' : 'New Entry'}
-                </h2>
-                <form onSubmit={handleSave} className="bg-white dark:bg-slate-800 p-8 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-6">
-                    <div className="space-y-4">
-                      <div>
-                        <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">File Name</label>
-                        <input required className="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500 outline-none dark:bg-slate-900 dark:border-slate-600" 
-                          value={formData.file_name} onChange={e => setFormData({...formData, file_name: e.target.value})} />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Client Name</label>
-                        <input className="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500 outline-none dark:bg-slate-900 dark:border-slate-600" 
-                          value={formData.client} onChange={e => setFormData({...formData, client: e.target.value})} />
-                      </div>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Hours</label>
-                          <input type="number" className="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500 outline-none dark:bg-slate-900 dark:border-slate-600" 
-                            value={formData.hours} onChange={e => setFormData({...formData, hours: e.target.value})} />
-                        </div>
-                        <div>
-                          <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Minutes</label>
-                          <input type="number" className="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500 outline-none dark:bg-slate-900 dark:border-slate-600" 
-                            value={formData.minutes} onChange={e => setFormData({...formData, minutes: e.target.value})} />
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <div className="space-y-4">
-                      <div>
-                        <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Date Completed</label>
-                        <input type="date" className="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500 outline-none dark:bg-slate-900 dark:border-slate-600" 
-                          value={formData.date} onChange={e => setFormData({...formData, date: e.target.value})} />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Link / URL</label>
-                        <input type="url" className="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500 outline-none dark:bg-slate-900 dark:border-slate-600" 
-                          value={formData.link} onChange={e => setFormData({...formData, link: e.target.value})} />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Status</label>
-                        <select className="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500 outline-none dark:bg-slate-900 dark:border-slate-600"
-                          value={formData.status} onChange={e => setFormData({...formData, status: e.target.value})}>
-                          <option>In Progress</option>
-                          <option>Pending QA</option>
-                          <option>Completed</option>
-                        </select>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex justify-end gap-3 pt-6 border-t border-slate-100">
-                    <button type="button" onClick={() => setView('dashboard')} className="px-6 py-2 text-slate-600 hover:bg-slate-100 rounded-lg font-medium">Cancel</button>
-                    <button type="submit" className="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium shadow-md">
-                      {loading ? 'Saving...' : 'Save Entry'}
+              <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
+                <div className="bg-white dark:bg-slate-800 w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden border border-slate-100 dark:border-slate-700 animate-in fade-in zoom-in duration-300">
+                  
+                  {/* Header */}
+                  <div className="bg-indigo-600 px-6 py-4 flex justify-between items-center">
+                    <h2 className="text-xl font-bold text-white">
+                      {isEditing ? 'Edit Entry' : 'New Entry'}
+                    </h2>
+                    <button onClick={() => setView('dashboard')} className="text-indigo-100 hover:text-white transition-colors">
+                      <X size={24} />
                     </button>
                   </div>
-                </form>
+
+                  <form onSubmit={handleSave} className="p-6 space-y-5">
+                    
+                    <div>
+                      <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">File Name</label>
+                      <input 
+                        required 
+                        className="w-full px-4 py-2.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all dark:bg-slate-900 dark:border-slate-600 dark:text-white" 
+                        placeholder="e.g. Meeting_Recording_01.mp3"
+                        value={formData.file_name} 
+                        onChange={e => setFormData({...formData, file_name: e.target.value})} 
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Client Name</label>
+                      <input 
+                        className="w-full px-4 py-2.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all dark:bg-slate-900 dark:border-slate-600 dark:text-white" 
+                        placeholder="Optional"
+                        value={formData.client} 
+                        onChange={e => setFormData({...formData, client: e.target.value})} 
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-5">
+                      <div>
+                         <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Duration (HH:MM)</label>
+                         <input 
+                          type="text"
+                          className="w-full px-4 py-2.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all dark:bg-slate-900 dark:border-slate-600 dark:text-white font-mono" 
+                          placeholder="00:00"
+                          maxLength={5}
+                          value={formData.timeString} 
+                          onChange={handleTimeChange} 
+                        />
+                        <p className="text-xs text-slate-400 mt-1">Ex: 01:30 for 1h 30m</p>
+                      </div>
+                      
+                      <div>
+                        <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Date</label>
+                        <input 
+                          type="date" 
+                          className="w-full px-4 py-2.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all dark:bg-slate-900 dark:border-slate-600 dark:text-white" 
+                          value={formData.date} 
+                          onChange={e => setFormData({...formData, date: e.target.value})} 
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Link / URL</label>
+                      <input 
+                        type="url" 
+                        className="w-full px-4 py-2.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all dark:bg-slate-900 dark:border-slate-600 dark:text-white" 
+                        placeholder="https://..."
+                        value={formData.link} 
+                        onChange={e => setFormData({...formData, link: e.target.value})} 
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Status</label>
+                      <select 
+                        className="w-full px-4 py-2.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all dark:bg-slate-900 dark:border-slate-600 dark:text-white"
+                        value={formData.status} 
+                        onChange={e => setFormData({...formData, status: e.target.value})}
+                      >
+                        <option>In Progress</option>
+                        <option>Pending QA</option>
+                        <option>Completed</option>
+                      </select>
+                    </div>
+
+                    <div className="flex justify-end gap-3 pt-4 border-t border-slate-100 dark:border-slate-700">
+                      <button type="button" onClick={() => setView('dashboard')} className="px-5 py-2.5 text-slate-600 hover:bg-slate-100 rounded-lg font-medium transition-colors">Cancel</button>
+                      <button type="submit" className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium shadow-md shadow-indigo-200 transition-all">
+                        {loading ? 'Saving...' : 'Save Entry'}
+                      </button>
+                    </div>
+                  </form>
+                </div>
               </div>
             )}
 
