@@ -42,12 +42,12 @@ const StatCard = ({ title, value, icon: Icon, colorClass }) => (
 
 const StatusBadge = ({ status }) => {
   const styles = {
-    'Completed': 'bg-emerald-100 text-emerald-800 border-emerald-200',
-    'In Progress': 'bg-blue-100 text-blue-800 border-blue-200',
-    'Pending QA': 'bg-amber-100 text-amber-800 border-amber-200',
+    'Completed': 'bg-emerald-100 text-emerald-800 border border-emerald-300',
+    'In Progress': 'bg-blue-100 text-blue-800 border border-blue-300',
+    'Pending QA': 'bg-amber-100 text-amber-800 border border-amber-300',
   };
   return (
-    <span className={`px-3 py-1 rounded-full text-xs font-bold border ${styles[status] || 'bg-slate-100 text-slate-600'}`}>
+    <span className={`px-3 py-1 rounded-full text-xs font-bold ${styles[status] || 'bg-slate-100 text-slate-600 border border-slate-300'}`}>
       {status}
     </span>
   );
@@ -63,7 +63,7 @@ export default function App() {
   // Form State
   const [formData, setFormData] = useState({
     file_name: '', client: '', 
-    timeString: '', // New field for the single input
+    timeString: '', 
     date: new Date().toISOString().split('T')[0], 
     link: '', notes: '', status: 'In Progress'
   });
@@ -93,14 +93,12 @@ export default function App() {
 
   // --- Handlers ---
   
-  // Helper to format 5:5 to 05:05
   const padTime = (num) => num.toString().padStart(2, '0');
 
   const handleSave = async (e) => {
     e.preventDefault();
     setLoading(true);
 
-    // Parse the Time String (HH:MM) back to numbers
     let hours = 0;
     let minutes = 0;
     
@@ -136,7 +134,6 @@ export default function App() {
     
     await fetchJobs();
     
-    // Reset Form
     setFormData({ file_name: '', client: '', timeString: '', date: new Date().toISOString().split('T')[0], link: '', notes: '', status: 'In Progress' });
     setIsEditing(null);
     setView('list');
@@ -151,7 +148,6 @@ export default function App() {
   };
 
   const handleEdit = (job) => {
-    // Convert saved numbers back to "HH:MM" string for the input
     const timeStr = `${padTime(job.hours)}:${padTime(job.minutes)}`;
 
     setFormData({ 
@@ -167,9 +163,7 @@ export default function App() {
     setView('add');
   };
 
-  // Specific handler to allow typing ":"
   const handleTimeChange = (e) => {
-    // Allow numbers and colon only
     const val = e.target.value.replace(/[^0-9:]/g, '');
     setFormData({...formData, timeString: val});
   };
@@ -226,7 +220,7 @@ export default function App() {
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 md:ml-64 p-8 md:p-12 overflow-y-auto bg-slate-50 dark:bg-slate-950">
+      <main className="flex-1 md:ml-64 p-8 md:p-12 overflow-y-auto bg-slate-100 dark:bg-slate-950">
         
         {/* Mobile Header */}
         <div className="md:hidden flex justify-between items-center mb-8 pb-4 bg-indigo-900 text-white p-4 -m-8 mb-8 rounded-b-xl shadow-md">
@@ -258,7 +252,7 @@ export default function App() {
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                   {/* Chart */}
-                  <div className="lg:col-span-2 bg-white dark:bg-slate-800 p-6 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
+                  <div className="lg:col-span-2 bg-white dark:bg-slate-800 p-6 rounded-xl border border-slate-300 dark:border-slate-700 shadow-sm">
                     <h3 className="font-bold text-slate-800 dark:text-white mb-6">Weekly Volume</h3>
                     <div className="h-72 w-full">
                       <ResponsiveContainer width="100%" height="100%">
@@ -273,23 +267,23 @@ export default function App() {
                     </div>
                   </div>
 
-                  {/* Recent Files Table */}
-                  <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden flex flex-col">
-                    <div className="p-5 border-b border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50">
+                  {/* Recent Files Table (Updated) */}
+                  <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-300 dark:border-slate-700 shadow-sm overflow-hidden flex flex-col">
+                    <div className="p-5 border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50">
                        <h3 className="font-bold text-slate-800 dark:text-white">Recent Activity</h3>
                     </div>
                     <div className="flex-1 overflow-auto">
-                      <table className="w-full text-left text-sm">
-                        <thead className="bg-slate-100 dark:bg-slate-700 text-slate-500 uppercase text-xs font-semibold">
+                      <table className="w-full text-left text-sm border-collapse">
+                        <thead className="bg-indigo-600 text-white border-b border-indigo-700">
                           <tr>
-                            <th className="px-5 py-3">File</th>
+                            <th className="px-5 py-3 border-r border-indigo-500">File</th>
                             <th className="px-5 py-3 text-right">Status</th>
                           </tr>
                         </thead>
-                        <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
+                        <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
                           {jobs.slice(0, 5).map(job => (
                             <tr key={job.id} className="hover:bg-slate-50 dark:hover:bg-slate-700/50">
-                              <td className="px-5 py-3">
+                              <td className="px-5 py-3 border-r border-slate-200 dark:border-slate-700">
                                 <p className="font-medium text-slate-900 dark:text-white truncate max-w-[120px]">{job.file_name}</p>
                                 <p className="text-xs text-slate-400">{formatDate(job.date)}</p>
                               </td>
@@ -402,7 +396,7 @@ export default function App() {
               </div>
             )}
 
-            {/* --- VIEW: LIST --- */}
+            {/* --- VIEW: LIST (Updated with Borders & Colors) --- */}
             {view === 'list' && (
               <div className="space-y-6">
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -414,39 +408,39 @@ export default function App() {
                   </div>
                 </div>
 
-                <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
+                <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-300 dark:border-slate-700 shadow-sm overflow-hidden">
                   <div className="overflow-x-auto">
-                    <table className="w-full text-left border-collapse">
-                      <thead className="bg-indigo-50 dark:bg-indigo-900/30 text-indigo-900 dark:text-indigo-200 border-b border-indigo-100 dark:border-indigo-800/50">
+                    <table className="w-full text-left border-collapse border border-slate-300 dark:border-slate-700">
+                      <thead className="bg-indigo-600 text-white">
                         <tr>
-                          <th className="p-4 text-xs font-bold uppercase tracking-wider">Datesssssss</th>
-                          <th className="p-4 text-xs font-bold uppercase tracking-wider">File Name</th>
-                          <th className="p-4 text-xs font-bold uppercase tracking-wider">Client</th>
-                          <th className="p-4 text-xs font-bold uppercase tracking-wider">Duration</th>
-                          <th className="p-4 text-xs font-bold uppercase tracking-wider">Status</th>
-                          <th className="p-4 text-xs font-bold uppercase tracking-wider">Link</th>
-                          <th className="p-4 text-xs font-bold uppercase tracking-wider text-right">Actions</th>
+                          <th className="p-4 text-xs font-bold uppercase tracking-wider border border-indigo-500">Date</th>
+                          <th className="p-4 text-xs font-bold uppercase tracking-wider border border-indigo-500">File Name</th>
+                          <th className="p-4 text-xs font-bold uppercase tracking-wider border border-indigo-500">Client</th>
+                          <th className="p-4 text-xs font-bold uppercase tracking-wider border border-indigo-500">Duration</th>
+                          <th className="p-4 text-xs font-bold uppercase tracking-wider border border-indigo-500">Status</th>
+                          <th className="p-4 text-xs font-bold uppercase tracking-wider border border-indigo-500">Link</th>
+                          <th className="p-4 text-xs font-bold uppercase tracking-wider text-right border border-indigo-500">Actions</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
+                      <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
                         {filteredJobs.map(job => (
-                          <tr key={job.id} className="group hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
-                            <td className="p-4 text-sm text-slate-600 dark:text-slate-300 whitespace-nowrap">{formatDate(job.date)}</td>
-                            <td className="p-4 font-bold text-slate-800 dark:text-white">{job.file_name}</td>
-                            <td className="p-4 text-sm text-slate-600 dark:text-slate-300">{job.client || '—'}</td>
-                            <td className="p-4 text-sm font-mono text-slate-600 dark:text-slate-300">{formatDuration(job.total_minutes)}</td>
-                            <td className="p-4"><StatusBadge status={job.status} /></td>
-                            <td className="p-4">
+                          <tr key={job.id} className="group hover:bg-indigo-50 dark:hover:bg-slate-700/50 transition-colors even:bg-slate-50 dark:even:bg-slate-800/50">
+                            <td className="p-4 text-sm text-slate-700 dark:text-slate-300 whitespace-nowrap border border-slate-200 dark:border-slate-700">{formatDate(job.date)}</td>
+                            <td className="p-4 font-bold text-slate-900 dark:text-white border border-slate-200 dark:border-slate-700">{job.file_name}</td>
+                            <td className="p-4 text-sm text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700">{job.client || '—'}</td>
+                            <td className="p-4 text-sm font-mono text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700">{formatDuration(job.total_minutes)}</td>
+                            <td className="p-4 border border-slate-200 dark:border-slate-700"><StatusBadge status={job.status} /></td>
+                            <td className="p-4 border border-slate-200 dark:border-slate-700">
                               {job.link ? (
-                                <a href={job.link} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:text-indigo-800 flex items-center gap-1 text-sm font-medium">
+                                <a href={job.link} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:text-indigo-800 flex items-center gap-1 text-sm font-bold">
                                   Open <ExternalLink size={14} />
                                 </a>
                               ) : <span className="text-slate-300 text-sm">—</span>}
                             </td>
-                            <td className="p-4 text-right">
+                            <td className="p-4 text-right border border-slate-200 dark:border-slate-700">
                               <div className="flex items-center justify-end space-x-2">
-                                <button onClick={() => handleEdit(job)} className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"><Edit2 size={18} /></button>
-                                <button onClick={() => handleDelete(job.id)} className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"><Trash2 size={18} /></button>
+                                <button onClick={() => handleEdit(job)} className="p-2 text-slate-500 hover:text-indigo-600 hover:bg-indigo-100 rounded-lg transition-colors"><Edit2 size={18} /></button>
+                                <button onClick={() => handleDelete(job.id)} className="p-2 text-slate-500 hover:text-red-600 hover:bg-red-100 rounded-lg transition-colors"><Trash2 size={18} /></button>
                               </div>
                             </td>
                           </tr>
