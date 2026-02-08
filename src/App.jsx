@@ -4,9 +4,9 @@ import { Analytics } from "@vercel/analytics/react";
 import { 
   LayoutDashboard, Plus, List, Timer, 
   Trash2, Edit2, ExternalLink, Search, 
-  CheckCircle2, Clock, AlertCircle, Loader2, X, CalendarDays, Settings,
-  ArrowUpDown, ArrowUp, ArrowDown, Filter, RotateCcw, GripVertical,
-  Play, Pause, Square, ArrowRight, Check, Menu
+  CheckCircle2, AlertCircle, Loader2, X, CalendarDays, Settings,
+  ArrowUpDown, ArrowUp, ArrowDown, RotateCcw, GripVertical,
+  Play, Pause, ArrowRight, Check, Menu
 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 
@@ -106,7 +106,6 @@ export default function App() {
   const [colWidth, setColWidth] = useState(250); 
   const resizingRef = useRef(false);
 
-  // --- UPDATED BILLING STATE: Uses Full Date String ---
   const [billingStartDate, setBillingStartDate] = useState(() => localStorage.getItem('billingStartDate') || new Date().toISOString().split('T')[0]);
   const [showBillingModal, setShowBillingModal] = useState(false);
   const [tempBillingDate, setTempBillingDate] = useState(billingStartDate);
@@ -124,7 +123,7 @@ export default function App() {
     file_name: '', 
     client: 'Mantis', durationString: '', link: ''
   });
-  const [timerStage, setTimerStage] = useState('FR'); // 'FR' -> 'SV'
+  const [timerStage, setTimerStage] = useState('FR'); 
   const [activeJobId, setActiveJobId] = useState(null); 
   const [timerRunning, setTimerRunning] = useState(false);
   const [timeLeft, setTimeLeft] = useState(0); 
@@ -170,32 +169,21 @@ export default function App() {
     const calculatedTat = Math.round(audioSeconds * multiplier);
     setTotalTat(calculatedTat);
     
-    // Only update timeLeft if timer isn't already running
     if (!timerRunning) {
         setTimeLeft(calculatedTat);
     }
   };
 
   useEffect(() => {
-    // 1. Calculate TAT whenever inputs change
-    if (!timerRunning) {
-        calculateTatForStage(timerStage);
-    }
-
-    // 2. AUTO-START: If in First Review and valid time (8 chars = HH:MM:SS) is entered
+    if (!timerRunning) calculateTatForStage(timerStage);
     if (timerStage === 'FR' && timerData.durationString.length === 8 && !timerRunning) {
         const secs = parseDurationStringToSeconds(timerData.durationString);
-        if (secs > 0) {
-            setTimerRunning(true);
-        }
+        if (secs > 0) setTimerRunning(true);
     }
-
-    // 3. AUTO-START: If switched to Speaker Verified (SV), start immediately
     if (timerStage === 'SV' && !timerRunning && totalTat > 0) {
         setTimerRunning(true);
     }
-
-  }, [timerData.durationString, timerStage, totalTat]); // Dependencies for auto-logic
+  }, [timerData.durationString, timerStage, totalTat]);
 
   // --- RESIZE LOGIC ---
   useEffect(() => {
@@ -228,8 +216,28 @@ export default function App() {
     setLoading(false);
   };
 
+  // --- AUTO NAMING HELPER ---
+  const generateAutoName = (existingJobs) => {
+    // Filter for files that start with "Unnamed File"
+    const unnamedDocs = existingJobs.filter(j => j.file_name.startsWith("Unnamed File"));
+    
+    if (unnamedDocs.length === 0) {
+        return "Unnamed File 1";
+    }
+
+    // Extract numbers: "Unnamed File 5" -> 5. "Unnamed File" -> 1.
+    const nums = unnamedDocs.map(j => {
+        const match = j.file_name.match(/Unnamed File (\d+)/);
+        if (match) return parseInt(match[1]);
+        if (j.file_name === "Unnamed File") return 1;
+        return 0; // Fallback
+    });
+
+    const maxNum = Math.max(...nums);
+    return `Unnamed File ${maxNum + 1}`;
+  };
+
   // --- TIMER ACTION HANDLERS ---
-  
   const handleTimerStartPause = () => {
     if (totalTat === 0) {
         calculateTatForStage(timerStage);
@@ -241,7 +249,7 @@ export default function App() {
   // STEP 1: FINISH FR
   const handleFinishFR = async () => {
     if (totalTat === 0) return;
-    setTimerRunning(false); // Stop FR Timer
+    setTimerRunning(false); 
     clearInterval(timerIntervalRef.current);
 
     setLoading(true);
@@ -252,8 +260,11 @@ export default function App() {
     const m = Math.floor((audioSeconds % 3600) / 60);
     const s = audioSeconds % 60;
 
-    // Smart Naming
-    const finalName = timerData.file_name.trim() || 'Unnamed File';
+    // --- AUTO NUMBERING LOGIC ---
+    let finalName = timerData.file_name.trim();
+    if (!finalName) {
+        finalName = generateAutoName(jobs);
+    }
 
     const payload = { 
       file_name: finalName, 
@@ -275,7 +286,7 @@ export default function App() {
     } else {
         await fetchJobs();
         setActiveJobId(data[0].id); 
-        setTimerStage('SV'); // This triggers the useEffect to Auto-Start SV
+        setTimerStage('SV'); 
     }
     setLoading(false);
   };
@@ -319,9 +330,22 @@ export default function App() {
     else if (parts.length === 2) { m = parts[0]; s = parts[1]; }
     else { m = parts[0]; }
     const totalSeconds = (h * 3600) + (m * 60) + s;
-    const payload = { file_name: formData.file_name, client: formData.client, hours: h, minutes: m, seconds: s, date: formData.date, link: formData.link, notes: formData.notes, status: formData.status, total_seconds: totalSeconds, total_minutes: Math.floor(totalSeconds / 60), user_id: deviceId };
+
+    // --- AUTO NUMBERING FOR MANUAL ENTRY ---
+    let finalName = formData.file_name.trim();
+    if (!finalName && !isEditing) {
+        finalName = generateAutoName(jobs);
+    } else if (!finalName && isEditing) {
+        // If editing and they cleared the name, keep the old name or generate new? 
+        // Safer to generate new to avoid empty string errors.
+        finalName = generateAutoName(jobs); 
+    }
+
+    const payload = { file_name: finalName, client: formData.client, hours: h, minutes: m, seconds: s, date: formData.date, link: formData.link, notes: formData.notes, status: formData.status, total_seconds: totalSeconds, total_minutes: Math.floor(totalSeconds / 60), user_id: deviceId };
+    
     if (isEditing) await supabase.from('jobs').update(payload).eq('id', isEditing);
     else await supabase.from('jobs').insert([payload]);
+    
     await fetchJobs();
     setFormData({ file_name: '', client: 'Mantis', timeString: '', date: new Date().toISOString().split('T')[0], link: '', notes: '', status: 'In Progress' });
     setIsEditing(null);
@@ -337,18 +361,12 @@ export default function App() {
   const requestSort = (key) => { let direction = 'asc'; if (sortConfig.key === key && sortConfig.direction === 'asc') direction = 'desc'; setSortConfig({ key, direction }); };
   const SortIcon = ({ column }) => { if (sortConfig.key !== column) return <ArrowUpDown size={14} style={{opacity:0.3}} />; return sortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />; };
 
-  // --- UPDATED BILLING CALCULATION ---
   const getBillingCycle = () => { 
     if (!billingStartDate) return { start: new Date(), end: new Date(), label: '' };
-    
-    // Start date is exactly what the user picked
     const start = new Date(billingStartDate);
-    
-    // End date is Start + 1 Month - 1 Day
     const end = new Date(start);
     end.setMonth(end.getMonth() + 1);
     end.setDate(end.getDate() - 1);
-    
     const opt = { month: 'short', day: 'numeric', year: 'numeric' };
     return { start, end, label: `${start.toLocaleDateString('en-US', opt)} - ${end.toLocaleDateString('en-US', opt)}` }; 
   };
@@ -356,11 +374,9 @@ export default function App() {
   const cycle = getBillingCycle();
   const cycleJobs = jobs.filter(j => { 
     const d = new Date(j.date); 
-    // Reset times to compare dates only
     d.setHours(0,0,0,0);
     const s = new Date(cycle.start); s.setHours(0,0,0,0);
     const e = new Date(cycle.end); e.setHours(23,59,59,999);
-    
     return d >= s && d <= e && j.status === 'Completed'; 
   });
   
@@ -404,26 +420,19 @@ export default function App() {
       <style>{` 
         .no-scrollbar::-webkit-scrollbar { display: none; } 
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; } 
-        
-        /* Default Grid (Desktop) */
         .dashboard-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 30px; }
         .billing-stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
         .billing-separator { border-left: 1px solid rgba(255,255,255,0.2); padding-left: 20px; }
-
-        /* Mobile Responsive Overrides */
         @media (max-width: 768px) {
             .billing-stats-grid { grid-template-columns: 1fr; gap: 10px; }
             .billing-separator { border-left: none; padding-left: 0; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.2); }
             .dashboard-grid { grid-template-columns: 1fr; }
             .billing-card { text-align: center; }
             .billing-card h3 { font-size: 28px !important; }
-            
-            /* Hide non-essential elements on very small screens */
             .hidden-mobile { display: none; }
         }
       `}</style>
 
-      {/* MOBILE HEADER */}
       {isMobile && (
         <div style={{ padding: '16px', background: 'white', borderBottom: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', zIndex: 60 }}>
             <div style={{display:'flex', alignItems:'center', gap:'12px'}}>
@@ -434,7 +443,6 @@ export default function App() {
         </div>
       )}
 
-      {/* SIDEBAR */}
       <aside style={styles.sidebar}>
         <div style={{ padding: '24px', borderBottom: '1px solid #1e293b', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <h2 style={{ fontSize: '18px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '10px', margin: 0 }}>
@@ -450,7 +458,6 @@ export default function App() {
         </nav>
       </aside>
       
-      {/* OVERLAY FOR MOBILE MENU */}
       {isMobile && showMobileMenu && (
         <div onClick={() => setShowMobileMenu(false)} style={{position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', zIndex:40}} />
       )}
@@ -485,14 +492,12 @@ export default function App() {
               </div>
             )}
 
-            {/* --- NEW TIMER VIEW --- */}
             {view === 'timer' && (
               <div style={{ maxWidth: '600px', margin: '0 auto' }}>
                 <h2 style={{ fontSize: '24px', fontWeight: 'bold', color: '#0f172a', marginBottom: '24px' }}>TAT Timer</h2>
                 
                 <div style={{ backgroundColor: 'white', padding: '24px', borderRadius: '16px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)' }}>
                   
-                  {/* VISUAL STAGE INDICATOR */}
                   <div style={{display:'flex', gap:'10px', marginBottom:'24px'}}>
                     <div style={{...styles.stageOption, ...(timerStage === 'FR' ? styles.stageActive : {})}}>
                         <div style={{fontSize:'12px', fontWeight:'bold', color: timerStage === 'FR' ? '#4f46e5' : '#94a3b8'}}>STEP 1</div>
@@ -507,9 +512,7 @@ export default function App() {
                     </div>
                   </div>
 
-                  {/* FORM FIELDS (Disabled during SV stage to prevent changing core file info) */}
                   <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
-                    {/* OPTIONAL FILE NAME INPUT */}
                     <div>
                       <label style={styles.label}>File Name (Optional)</label>
                       <input 
@@ -540,7 +543,6 @@ export default function App() {
                       </div>
                   </div>
 
-                  {/* TIMER DISPLAY */}
                   <div style={{textAlign:'center', marginBottom:'20px'}}>
                     <div style={{fontSize:'14px', color:'#64748b', marginBottom:'4px'}}>
                         {timerStage === 'FR' ? 'Target TAT: First Review' : 'Target TAT: Speaker Verification'}
@@ -550,7 +552,6 @@ export default function App() {
                     </div>
                   </div>
 
-                  {/* TIMER CONTROLS - DYNAMIC BASED ON STAGE */}
                   <div style={{...styles.timerControls, flexDirection: isMobile ? 'column' : 'row'}}>
                     {!timerRunning ? (
                         <button onClick={handleTimerStartPause} style={{...styles.controlBtn, ...styles.startBtn}} disabled={totalTat === 0}>
@@ -562,7 +563,6 @@ export default function App() {
                         </button>
                     )}
 
-                    {/* DYNAMIC ACTION BUTTON */}
                     {timerStage === 'FR' ? (
                         <button onClick={handleFinishFR} style={{...styles.controlBtn, backgroundColor:'#4f46e5', color:'white'}} disabled={totalTat === 0}>
                             <ArrowRight size={16} /> Finish FR & Go to SV
@@ -582,7 +582,6 @@ export default function App() {
               </div>
             )}
 
-            {/* ENTRY MODAL */}
             {showEntryModal && (
               <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(15, 23, 42, 0.7)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 }}>
                 <div style={{ backgroundColor: 'white', borderRadius: '16px', width: '100%', maxWidth: '480px', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)' }}>
@@ -593,7 +592,13 @@ export default function App() {
                   <form onSubmit={handleSave} style={{ padding: '24px' }}>
                     <div style={{ marginBottom: '16px' }}>
                       <label style={styles.label}>File Name</label>
-                      <input required style={styles.input} placeholder="e.g. Meeting_Audio_01" value={formData.file_name} onChange={e => setFormData({...formData, file_name: e.target.value})} />
+                      <input 
+                        style={styles.input} 
+                        placeholder="e.g. Meeting_Audio_01 (Leave empty for Auto Name)" 
+                        value={formData.file_name} 
+                        onChange={e => setFormData({...formData, file_name: e.target.value})} 
+                        /* REMOVED REQUIRED ATTRIBUTE */
+                      />
                     </div>
                     <div style={{ marginBottom: '16px' }}>
                       <label style={styles.label}>File Type</label>
@@ -620,7 +625,6 @@ export default function App() {
                   <h3 style={{ margin: '0 0 16px 0', fontSize: '16px', fontWeight: 'bold' }}>Billing Settings</h3>
                   <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', color: '#64748b', marginBottom: '6px', textTransform: 'uppercase' }}>Start Date of Current Cycle</label>
                   
-                  {/* CHANGED TO DATE INPUT */}
                   <input 
                     type="date" 
                     value={tempBillingDate} 
