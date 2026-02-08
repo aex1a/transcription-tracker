@@ -6,7 +6,7 @@ import {
   CheckCircle2, Clock, AlertCircle, Loader2, X, CalendarDays, Settings
 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
-import { Analytics } from "@vercel/analytics/next"
+
 // --- Utility Functions ---
 
 // 1. GENERATE INVISIBLE ID
@@ -19,7 +19,7 @@ const getDeviceId = () => {
   return id;
 };
 
-// UPDATED: Now returns 3 decimal places (e.g. 0.849)
+// Returns 3 decimal places (e.g. 0.849)
 const formatDecimalHours = (totalSeconds) => {
   if (!totalSeconds) return '0.000';
   const hours = totalSeconds / 3600;
