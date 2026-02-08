@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from './supabase'; 
-import { Analytics } from "@vercel/analytics/react"; // <--- CORRECT IMPORT FOR REACT/VITE
+import { Analytics } from "@vercel/analytics/react"; 
 import { 
   LayoutDashboard, Plus, List, 
   Trash2, Edit2, ExternalLink, Search, 
-  CheckCircle2, Clock, AlertCircle, Loader2, X, CalendarDays, Settings
+  CheckCircle2, Clock, AlertCircle, Loader2, X, CalendarDays, Settings,
+  ArrowUpDown, ArrowUp, ArrowDown
 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 
@@ -79,6 +80,9 @@ export default function App() {
   const [view, setView] = useState('dashboard');
   const [searchTerm, setSearchTerm] = useState('');
   
+  // Sorting State
+  const [sortConfig, setSortConfig] = useState({ key: 'date', direction: 'desc' });
+
   const [billingStartDay, setBillingStartDay] = useState(() => parseInt(localStorage.getItem('billingStart') || '13'));
   const [showBillingModal, setShowBillingModal] = useState(false);
   const [tempBillingDay, setTempBillingDay] = useState(billingStartDay);
@@ -157,7 +161,22 @@ export default function App() {
 
   const handleTimeChange = (e) => setFormData({...formData, timeString: e.target.value.replace(/[^0-9:]/g, '')});
 
-  // Calculations
+  // --- Sorting Handler ---
+  const requestSort = (key) => {
+    let direction = 'asc';
+    if (sortConfig.key === key && sortConfig.direction === 'asc') {
+      direction = 'desc';
+    }
+    setSortConfig({ key, direction });
+  };
+
+  // Helper to draw Sort Icons
+  const SortIcon = ({ column }) => {
+    if (sortConfig.key !== column) return <ArrowUpDown size={14} style={{opacity:0.3}} />;
+    return sortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />;
+  };
+
+  // --- Calculations & Filtering ---
   const getBillingCycle = () => {
     const today = new Date();
     const d = today.getDate(), m = today.getMonth(), y = today.getFullYear();
@@ -173,6 +192,29 @@ export default function App() {
   const cycleJobs = jobs.filter(j => { const d = new Date(j.date); return d >= cycle.start && d <= cycle.end && j.status === 'Completed'; });
   const cycleSecs = cycleJobs.reduce((acc, curr) => acc + (curr.total_seconds || 0), 0);
 
+  // Filter First
+  const filteredJobs = jobs.filter(j => j.file_name.toLowerCase().includes(searchTerm.toLowerCase()) || (j.client && j.client.toLowerCase().includes(searchTerm.toLowerCase())));
+
+  // Calculate Total Hours for the LIST VIEW based on filtered results
+  const listTotalSeconds = filteredJobs.reduce((acc, job) => acc + (job.total_seconds || 0), 0);
+
+  // Sort Second
+  const sortedJobs = [...filteredJobs].sort((a, b) => {
+    if (sortConfig.key === 'date') {
+      const dateA = new Date(a.date);
+      const dateB = new Date(b.date);
+      return sortConfig.direction === 'asc' ? dateA - dateB : dateB - dateA;
+    }
+    if (sortConfig.key === 'client') {
+      const valA = (a.client || '').toLowerCase();
+      const valB = (b.client || '').toLowerCase();
+      if (valA < valB) return sortConfig.direction === 'asc' ? -1 : 1;
+      if (valA > valB) return sortConfig.direction === 'asc' ? 1 : -1;
+      return 0;
+    }
+    return 0;
+  });
+
   const chartData = jobs.reduce((acc, job) => {
     const d = job.date;
     const f = acc.find(i => i.date === d);
@@ -180,8 +222,6 @@ export default function App() {
     if (f) f.minutes += m; else acc.push({ date: d, minutes: m });
     return acc;
   }, []).sort((a, b) => new Date(a.date) - new Date(b.date)).slice(-7);
-
-  const filteredJobs = jobs.filter(j => j.file_name.toLowerCase().includes(searchTerm.toLowerCase()) || (j.client && j.client.toLowerCase().includes(searchTerm.toLowerCase())));
 
   const styles = {
     container: { fontFamily: 'Inter, sans-serif', backgroundColor: '#f1f5f9', minHeight: '100vh', display: 'flex' },
@@ -192,6 +232,7 @@ export default function App() {
     input: { width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '14px', outline: 'none', backgroundColor: '#f8fafc', boxSizing:'border-box' },
     table: { width: '100%', borderCollapse: 'collapse', backgroundColor: 'white', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' },
     th: { backgroundColor: '#f8fafc', color: '#475569', padding: '12px 16px', textAlign: 'left', fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', borderBottom: '1px solid #e2e8f0' },
+    thClickable: { cursor: 'pointer', userSelect: 'none', display:'flex', alignItems:'center', gap:'6px' },
     td: { padding: '14px 16px', borderBottom: '1px solid #f1f5f9', fontSize: '14px', color: '#334155' }
   };
 
@@ -252,8 +293,8 @@ export default function App() {
                       <input required style={styles.input} placeholder="e.g. Meeting_Audio_01" value={formData.file_name} onChange={e => setFormData({...formData, file_name: e.target.value})} />
                     </div>
                     <div style={{ marginBottom: '16px' }}>
-                      <label style={styles.label}>Client Name</label>
-                      <input style={styles.input} placeholder="Optional" value={formData.client} onChange={e => setFormData({...formData, client: e.target.value})} />
+                      <label style={styles.label}>File Type (Mantis/Cricket)</label>
+                      <input style={styles.input} placeholder="e.g. Mantis" value={formData.client} onChange={e => setFormData({...formData, client: e.target.value})} />
                     </div>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
                       <div>
@@ -301,11 +342,52 @@ export default function App() {
             
             {view === 'list' && (
               <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}><h2 style={{ fontSize: '24px', fontWeight: 'bold', color: '#0f172a' }}>File History</h2><input style={{...styles.input, width: '250px', backgroundColor: 'white'}} placeholder="Search..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} /></div>
+                {/* Header Row */}
+                <div style={{ display: 'flex', flexWrap:'wrap', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', gap:'10px' }}>
+                  <h2 style={{ fontSize: '24px', fontWeight: 'bold', color: '#0f172a' }}>File History</h2>
+                  
+                  {/* SEARCH + TOTAL HOURS BADGE */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <div style={{ background: '#e0e7ff', color: '#4338ca', padding: '8px 12px', borderRadius: '8px', fontWeight: '700', fontSize: '13px', border:'1px solid #c7d2fe' }}>
+                      Total List Hours: {formatDecimalHours(listTotalSeconds)}
+                    </div>
+                    <input style={{...styles.input, width: '250px', backgroundColor: 'white'}} placeholder="Search..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+                  </div>
+                </div>
+
                 <div style={{ overflowX: 'auto', borderRadius: '12px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)' }}>
                   <table style={styles.table}>
-                    <thead><tr><th style={styles.th}>Date</th><th style={styles.th}>File Name</th><th style={styles.th}>Client</th><th style={styles.th}>Duration</th><th style={styles.th}>Status</th><th style={styles.th}>Link</th><th style={{...styles.th, textAlign: 'right'}}>Actions</th></tr></thead>
-                    <tbody>{filteredJobs.map(job => (<tr key={job.id} style={{ borderBottom: '1px solid #f1f5f9' }}><td style={styles.td}>{formatDate(job.date)}</td><td style={{...styles.td, fontWeight: '600'}}>{job.file_name}</td><td style={styles.td}>{job.client||'-'}</td><td style={{...styles.td, fontFamily: 'monospace', color:'#6366f1'}}>{formatDuration(job.total_seconds)}</td><td style={styles.td}><StatusBadge status={job.status} /></td><td style={styles.td}>{job.link && <a href={job.link} target="_blank"><ExternalLink size={12}/></a>}</td><td style={{...styles.td, textAlign: 'right'}}><button onClick={() => handleEdit(job)} style={{background:'none', border:'none', cursor:'pointer', marginRight:'8px'}}><Edit2 size={16}/></button><button onClick={() => handleDelete(job.id)} style={{background:'none', border:'none', cursor:'pointer', color:'#ef4444'}}><Trash2 size={16}/></button></td></tr>))}</tbody>
+                    <thead>
+                      <tr>
+                        <th style={styles.th} onClick={() => requestSort('date')}>
+                          <div style={styles.thClickable}>Date <SortIcon column="date" /></div>
+                        </th>
+                        <th style={styles.th}>File Name</th>
+                        <th style={styles.th} onClick={() => requestSort('client')}>
+                          <div style={styles.thClickable}>File Type <SortIcon column="client" /></div>
+                        </th>
+                        <th style={styles.th}>Duration</th>
+                        <th style={styles.th}>Status</th>
+                        <th style={styles.th}>Link</th>
+                        <th style={{...styles.th, textAlign: 'right'}}>EDIT/DELETE</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {sortedJobs.map(job => (
+                        <tr key={job.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                          <td style={styles.td}>{formatDate(job.date)}</td>
+                          <td style={{...styles.td, fontWeight: '600'}}>{job.file_name}</td>
+                          <td style={styles.td}>{job.client||'-'}</td>
+                          <td style={{...styles.td, fontFamily: 'monospace', color:'#6366f1'}}>{formatDuration(job.total_seconds)}</td>
+                          <td style={styles.td}><StatusBadge status={job.status} /></td>
+                          <td style={styles.td}>{job.link && <a href={job.link} target="_blank"><ExternalLink size={12}/></a>}</td>
+                          <td style={{...styles.td, textAlign: 'right'}}>
+                            <button onClick={() => handleEdit(job)} style={{background:'none', border:'none', cursor:'pointer', marginRight:'8px'}}><Edit2 size={16}/></button>
+                            <button onClick={() => handleDelete(job.id)} style={{background:'none', border:'none', cursor:'pointer', color:'#ef4444'}}><Trash2 size={16}/></button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
                   </table>
                 </div>
               </div>
