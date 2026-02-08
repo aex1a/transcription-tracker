@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from './supabase'; 
 import { Analytics } from "@vercel/analytics/react"; 
-import * as XLSX from 'xlsx'; // Requires: npm install xlsx
+import XLSX from 'xlsx-js-style'; // CHANGED: Must use 'xlsx-js-style' for colors/bold/borders
 import { 
   LayoutDashboard, Plus, List, Timer, 
   Trash2, Edit2, ExternalLink, Search, 
@@ -241,58 +241,99 @@ export default function App() {
     return `Unnamed File ${maxNum + 1}`;
   };
 
-  // --- EXPORT EXCEL LOGIC ---
+  // --- EXPORT EXCEL LOGIC (UPDATED) ---
   const downloadBillingXLSX = () => {
     const cycle = getBillingCycle();
+    
+    // 1. FILTER: Date Range AND Status = 'Completed'
     const cycleJobs = jobs.filter(j => { 
         const d = new Date(j.date); 
         d.setHours(0,0,0,0);
         const s = new Date(cycle.start); s.setHours(0,0,0,0);
         const e = new Date(cycle.end); e.setHours(23,59,59,999);
-        return d >= s && d <= e; 
+        return d >= s && d <= e && j.status === 'Completed'; 
     });
 
     if (cycleJobs.length === 0) {
-        alert("No files found for this billing cycle.");
+        alert("No completed files found for this billing cycle.");
         return;
     }
 
-    // 1. Prepare Data with Decimal Column
+    // 2. Prepare Data (Remove Notes, Add Decimal Hours)
+    // Calculate total hours first
+    const totalHoursSum = cycleJobs.reduce((acc, job) => acc + (job.total_seconds / 3600), 0);
+
     const exportData = cycleJobs.map(job => ({
         "Date": job.date,
         "File Name": job.file_name,
         "Client": job.client,
         "Duration": formatDuration(job.total_seconds),
-        "Total Hours (Decimal)": parseFloat((job.total_seconds / 3600).toFixed(4)), // NEW COLUMN
+        "Total Hours (Decimal)": parseFloat((job.total_seconds / 3600).toFixed(4)),
         "Status": job.status,
-        "Link": job.link || "",
-        "Notes": job.notes || ""
+        "Link": job.link || ""
     }));
 
-    // 2. Create Worksheet
+    // 3. Add TOTAL Row at the bottom
+    exportData.push({
+        "Date": "", 
+        "File Name": "TOTAL", // Will be bolded
+        "Client": "",
+        "Duration": "",
+        "Total Hours (Decimal)": parseFloat(totalHoursSum.toFixed(4)), // The Sum
+        "Status": "",
+        "Link": ""
+    });
+
+    // 4. Create Sheet
     const ws = XLSX.utils.json_to_sheet(exportData);
 
-    // 3. Auto-space Columns (Calculate Max Width)
-    const colWidths = [];
-    // Get headers
-    const headers = Object.keys(exportData[0]);
-    headers.forEach((key, i) => {
-        let maxLen = key.length;
-        exportData.forEach(row => {
-            if (row[key]) {
-                const len = row[key].toString().length;
-                if (len > maxLen) maxLen = len;
-            }
-        });
-        colWidths[i] = { wch: maxLen + 5 }; // +5 buffer space
-    });
-    ws['!cols'] = colWidths;
+    // 5. STYLING: Apply Borders and Bold Headers/Totals
+    const range = XLSX.utils.decode_range(ws['!ref']);
+    
+    // Define Border Style
+    const borderStyle = {
+        top: { style: "thin", color: { auto: 1 } },
+        bottom: { style: "thin", color: { auto: 1 } },
+        left: { style: "thin", color: { auto: 1 } },
+        right: { style: "thin", color: { auto: 1 } }
+    };
 
-    // 4. Create Workbook & Append
+    for (let R = range.s.r; R <= range.e.r; ++R) {
+        for (let C = range.s.c; C <= range.e.c; ++C) {
+            const cell_address = XLSX.utils.encode_cell({r: R, c: C});
+            if (!ws[cell_address]) continue;
+
+            // Apply Borders to ALL cells
+            if (!ws[cell_address].s) ws[cell_address].s = {};
+            ws[cell_address].s.border = borderStyle;
+
+            // Bold for HEADER (Row 0)
+            if (R === 0) {
+                ws[cell_address].s.font = { bold: true };
+                ws[cell_address].s.alignment = { horizontal: "center" };
+            }
+
+            // Bold for TOTAL ROW (Last Row)
+            if (R === range.e.r) {
+                ws[cell_address].s.font = { bold: true };
+            }
+        }
+    }
+
+    // 6. Auto-width Columns
+    const wscols = [
+        {wch: 12}, // Date
+        {wch: 40}, // Name
+        {wch: 10}, // Client
+        {wch: 10}, // Duration
+        {wch: 22}, // Total Hours (Dec)
+        {wch: 12}, // Status
+        {wch: 30}  // Link
+    ];
+    ws['!cols'] = wscols;
+
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Billing Cycle");
-
-    // 5. Download File
     const fileName = `Billing_${cycle.start.toISOString().split('T')[0]}_to_${cycle.end.toISOString().split('T')[0]}.xlsx`;
     XLSX.writeFile(wb, fileName);
   };
