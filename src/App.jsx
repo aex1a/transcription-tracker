@@ -62,35 +62,37 @@ const formatDate = (dateString) => {
 // --- Color Themes ---
 const themes = {
   light: {
-    bg: '#ffffff',
-    text: '#191414',         // Spotify Black
-    mutedText: '#535353',
-    sidebarBg: '#ffffff',    // UPDATED: White Sidebar
-    sidebarText: '#191414',
-    sidebarActiveBg: '#f6f6f6',
-    cardBg: '#ffffff',
-    border: '#d9d9d9',
+    // HYBRID SPOTIFY THEME: White Sidebar, Black Content
+    bg: '#191414',           // Main Content: Spotify Black
+    text: '#ffffff',         // Main Text: White
+    mutedText: '#b3b3b3',    // Light Grey
+    sidebarBg: '#ffffff',    // Sidebar: White (Requested)
+    sidebarText: '#191414',  // Sidebar Text: Black
+    sidebarActiveBg: '#f0f0f0', // Very light grey for active sidebar item
+    cardBg: '#212121',       // Cards: Dark Grey to fit Spotify feel
+    border: '#535353',       // Dark Grey borders
     accent: '#1db954',       // Spotify Green
-    accentSec: '#191414',
+    accentSec: '#ffffff',
     tableHeaderBg: '#1db954',// Green Header
     tableHeaderText: '#ffffff',
-    unnamedRowBg: '#fee2e2', // UPDATED: Reddish background for unnamed files
-    statCardShadow: '0 2px 8px rgba(0,0,0,0.1)'
+    unnamedRowBg: '#450a0a', // Dark Reddish for dark card background
+    statCardShadow: '0 4px 12px rgba(0,0,0,0.5)'
   },
   dark: {
-    bg: '#181C14',           // Darkest Black-Green
-    text: '#ECDFCC',         // Cream Text
-    mutedText: '#697565',    // Sage Green
-    sidebarBg: '#181C14',    // Match BG
-    sidebarText: '#ECDFCC',
-    sidebarActiveBg: '#3C3D37',
-    cardBg: '#3C3D37',       // Dark Olive Cards
-    border: '#697565',       // Sage Borders
-    accent: '#ECDFCC',       // Cream Accent
-    accentSec: '#697565',
-    tableHeaderBg: '#3C3D37',
-    tableHeaderText: '#ECDFCC',
-    unnamedRowBg: '#3f1a1a', // Dark Reddish for dark mode
+    // DEEP OCEAN / FOREST THEME
+    bg: '#001524',           // Deep Navy/Black
+    text: '#ffffff',         // White fonts
+    mutedText: '#9ca3af',
+    sidebarBg: '#445D48',    // Muted Forest Green
+    sidebarText: '#ffffff',
+    sidebarActiveBg: '#354a38',
+    cardBg: '#445D48',       // Cards match sidebar
+    border: '#2a3c2e',       // Darker green border
+    accent: '#ffffff',       // White accents
+    accentSec: '#445D48',
+    tableHeaderBg: '#354a38',
+    tableHeaderText: '#ffffff',
+    unnamedRowBg: '#3f1a1a', // Dark Reddish
     statCardShadow: '0 4px 6px -1px rgba(0,0,0,0.5)'
   }
 };
@@ -99,8 +101,9 @@ const themes = {
 
 const BillingCard = ({ label, count, hours, onEdit, onExport, theme, darkMode }) => (
   <div className="billing-card" style={{ 
-    background: darkMode ? 'linear-gradient(135deg, #3C3D37 0%, #181C14 100%)' : 'linear-gradient(135deg, #191414 0%, #1db954 100%)', 
-    borderRadius: '8px', 
+    // Light Mode (Hybrid): Black -> Spotify Green | Dark Mode: Navy -> Forest
+    background: darkMode ? 'linear-gradient(135deg, #001524 0%, #445D48 100%)' : 'linear-gradient(135deg, #191414 0%, #1db954 100%)', 
+    borderRadius: '16px', 
     padding: '24px', 
     color: '#ffffff', 
     boxShadow: theme.statCardShadow, 
@@ -116,7 +119,7 @@ const BillingCard = ({ label, count, hours, onEdit, onExport, theme, darkMode })
       </button>
     </div>
     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '16px' }}>
-      <div><p style={{ fontSize: '12px', fontWeight: '700', opacity: 0.9, textTransform: 'uppercase', letterSpacing: '1px', color: '#ffffff' }}>Current Billing Cycle</p><p style={{ fontSize: '14px', fontWeight: 'bold', marginTop: '4px', color: '#ffffff' }}>{label}</p></div>
+      <div><p style={{ fontSize: '13px', fontWeight: '700', opacity: 0.9, textTransform: 'uppercase', letterSpacing: '1px', color: '#ffffff' }}>Current Billing Cycle</p><p style={{ fontSize: '14px', fontWeight: 'bold', marginTop: '4px', color: '#ffffff' }}>{label}</p></div>
       <CalendarDays size={24} style={{ opacity: 0.9, color: '#ffffff', marginRight: '80px' }} />
     </div>
     <div className="billing-stats-grid">
@@ -138,28 +141,30 @@ const StatCard = ({ title, value, icon: Icon, color, theme }) => (
       <p className="stat-title" style={{ color: theme.mutedText }}>{title}</p>
       <h3 className="stat-value" style={{ color: theme.text }}>{value}</h3>
     </div>
-    <div className="stat-icon" style={{ color: color, backgroundColor: 'rgba(100,100,100,0.1)' }}>
+    <div className="stat-icon" style={{ color: color, backgroundColor: 'rgba(255,255,255,0.05)' }}>
       <Icon size={24} />
     </div>
   </div>
 );
 
-const StatusBadge = ({ status, darkMode, theme }) => {
+const StatusBadge = ({ status, darkMode }) => {
+  // Light Mode (Hybrid): Green/White
+  // Dark Mode: Forest/White
   const c = { 
     'Completed': {
-        bg: darkMode ? '#697565' : '#1db954', 
-        t: darkMode ? '#ECDFCC' : '#ffffff', 
-        b: darkMode ? '#697565' : '#1db954'
+        bg: darkMode ? '#2a3c2e' : 'rgba(29, 185, 84, 0.2)', 
+        t: '#ffffff', 
+        b: darkMode ? '#ffffff' : '#1db954'
     }, 
     'In Progress': {
-        bg: darkMode ? '#3C3D37' : '#ffffff', 
-        t: darkMode ? '#ECDFCC' : '#191414', 
-        b: darkMode ? '#697565' : '#d1d5db'
+        bg: '#ffffff', 
+        t: '#000000', 
+        b: '#ffffff'
     }, 
     'Pending QA': {
-        bg: darkMode ? '#3f1a1a' : '#ffedd5', 
-        t: darkMode ? '#ECDFCC' : '#c2410c', 
-        b: darkMode ? '#3f1a1a' : '#fdba74'
+        bg: 'rgba(255, 255, 255, 0.1)', 
+        t: '#ffffff', 
+        b: '#b3b3b3'
     } 
   }[status] || {bg:'#f3f4f6', t:'#374151', b:'#e5e7eb'};
   
@@ -499,11 +504,10 @@ export default function App() {
   const sortedJobs = [...filteredJobs].sort((a, b) => { if (sortConfig.key === 'date') { return sortConfig.direction === 'asc' ? new Date(a.date) - new Date(b.date) : new Date(b.date) - new Date(a.date); } if (sortConfig.key === 'client') { const valA = (a.client || '').toLowerCase(); const valB = (b.client || '').toLowerCase(); if (valA < valB) return sortConfig.direction === 'asc' ? -1 : 1; if (valA > valB) return sortConfig.direction === 'asc' ? 1 : -1; return 0; } if (sortConfig.key === 'status') { const statusOrder = { 'In Progress': 1, 'Pending QA': 2, 'Completed': 3 }; const valA = statusOrder[a.status] || 99; const valB = statusOrder[b.status] || 99; return sortConfig.direction === 'asc' ? valA - valB : valB - valA; } return 0; });
   const chartData = jobs.reduce((acc, job) => { const d = job.date; const f = acc.find(i => i.date === d); const m = Math.floor((job.total_seconds || 0) / 60); if (f) f.minutes += m; else acc.push({ date: d, minutes: m }); return acc; }, []).sort((a, b) => new Date(a.date) - new Date(b.date)).slice(-7);
 
-  // --- STYLES ---
   const styles = {
     container: { fontFamily: '"Circular", "Helvetica Neue", "Helvetica", "Arial", sans-serif', backgroundColor: currentTheme.bg, minHeight: '100vh', display: 'flex', flexDirection: 'column' },
     
-    // Sidebar:
+    // Sidebar: Light Mode = White (#ffffff) | Dark Mode = Black/Green (#181C14)
     sidebar: { width: '250px', backgroundColor: currentTheme.sidebarBg, borderRight: `1px solid ${currentTheme.border}`, display: 'flex', flexDirection: 'column', position: 'fixed', height: '100%', zIndex: 50, transition: 'transform 0.3s ease', transform: isMobile && !showMobileMenu ? 'translateX(-100%)' : 'translateX(0)' },
     
     main: { flex: 1, marginLeft: isMobile ? '0' : '250px', padding: isMobile ? '1rem' : '2rem', overflowY: 'auto' },
@@ -520,17 +524,17 @@ export default function App() {
     td: { padding: '14px 16px', borderBottom: `1px solid ${currentTheme.border}`, fontSize: '14px', color: currentTheme.text },
     tdWrapper: { width: '100%', height: '100%', whiteSpace: 'nowrap', overflowX: 'auto', overflowY: 'hidden', display: 'block' },
     radioLabel: { display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', cursor: 'pointer', padding: '10px', borderRadius: '8px', border: `1px solid ${currentTheme.border}`, backgroundColor: currentTheme.cardBg, color: currentTheme.text },
-    radioActive: { backgroundColor: currentTheme.accent, borderColor: currentTheme.accent, color: darkMode ? '#112600' : '#ffffff', fontWeight: '700' },
-    primaryBtn: { backgroundColor: currentTheme.accent, color: darkMode ? '#112600' : '#ffffff', padding: '8px 16px', borderRadius: '50px', border: 'none', fontWeight: '700', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', boxShadow: '0 2px 4px rgba(0, 0, 0, 0.3)', textTransform: 'uppercase', letterSpacing: '1px' },
+    radioActive: { backgroundColor: currentTheme.accent, borderColor: currentTheme.accent, color: darkMode ? '#181C14' : '#ffffff', fontWeight: '700' },
+    primaryBtn: { backgroundColor: currentTheme.accent, color: darkMode ? '#181C14' : '#ffffff', padding: '8px 16px', borderRadius: '50px', border: 'none', fontWeight: '700', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', boxShadow: '0 2px 4px rgba(0, 0, 0, 0.3)', textTransform: 'uppercase', letterSpacing: '1px' },
     
     timerDisplay: { fontSize: '48px', fontWeight: '900', fontFamily: 'monospace', color: currentTheme.accent, textAlign: 'center', margin: '20px 0' },
     timerControls: { display: 'flex', justifyContent: 'center', gap: '20px', marginBottom: '20px' },
     controlBtn: { display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 20px', borderRadius: '50px', border: 'none', fontWeight: '700', cursor: 'pointer', fontSize: '14px', letterSpacing:'0.5px' },
-    startBtn: { backgroundColor: currentTheme.accent, color: darkMode ? '#112600' : '#ffffff' },
+    startBtn: { backgroundColor: currentTheme.accent, color: darkMode ? '#181C14' : '#ffffff' },
     pauseBtn: { backgroundColor: currentTheme.border, color: currentTheme.text },
     stopBtn: { backgroundColor: '#ef4444', color: 'white' },
     stageOption: { display: 'flex', flexDirection: 'column', padding: '15px', borderRadius: '8px', border: `2px solid ${currentTheme.border}`, flex: 1, textAlign:'center' },
-    stageActive: { borderColor: currentTheme.accent, backgroundColor: darkMode ? '#1e4002' : '#f0fdf4' },
+    stageActive: { borderColor: currentTheme.accent, backgroundColor: darkMode ? '#3C3D37' : '#f0fdf4' },
     stageTitle: { fontWeight: 'bold', marginBottom: '4px', color: currentTheme.text },
     stageDesc: { fontSize: '12px', color: currentTheme.mutedText }
   };
@@ -566,14 +570,14 @@ export default function App() {
                 <button onClick={() => setShowMobileMenu(!showMobileMenu)} style={{border:'none', background:'none'}}><Menu size={24} color={currentTheme.sidebarText}/></button>
                 <span style={{fontWeight:'bold', color: currentTheme.sidebarText}}>TrackScribe</span>
             </div>
-            <button onClick={openNewEntry} style={{backgroundColor: currentTheme.accent, color: darkMode ? '#112600' : '#ffffff', border:'none', padding:'6px 12px', borderRadius:'6px', fontSize:'12px'}}>+ Add</button>
+            <button onClick={openNewEntry} style={{backgroundColor: currentTheme.accent, color: darkMode ? '#181C14' : '#ffffff', border:'none', padding:'6px 12px', borderRadius:'6px', fontSize:'12px'}}>+ Add</button>
         </div>
       )}
 
       <aside style={styles.sidebar}>
         <div style={{ padding: '24px', borderBottom: `1px solid ${currentTheme.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <h2 style={{ fontSize: '18px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '10px', margin: 0 }}>
-            <div style={{ background: currentTheme.accent, width: '28px', height: '28px', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: darkMode ? '#112600' : '#ffffff', fontWeight: '900' }}>T</div>
+            <div style={{ background: currentTheme.accent, width: '28px', height: '28px', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: darkMode ? '#181C14' : '#ffffff', fontWeight: '900' }}>T</div>
             <span style={{color: currentTheme.sidebarText, fontFamily: 'Circular, sans-serif', fontWeight: '900', letterSpacing:'-0.5px'}}>TrackScribe</span>
           </h2>
           <button onClick={() => setDarkMode(!darkMode)} style={{background:'transparent', border:'none', cursor:'pointer', color: currentTheme.sidebarText}}>
@@ -589,7 +593,7 @@ export default function App() {
       </aside>
       
       {isMobile && showMobileMenu && (
-        <div onClick={() => setShowMobileMenu(false)} style={{position:'fixed', inset:0, background:'rgba(0, 0, 0, 0.8)', zIndex:40}} />
+        <div onClick={() => setShowMobileMenu(false)} style={{position:'fixed', inset:0, background:'rgba(24, 28, 20, 0.8)', zIndex:40}} />
       )}
 
       <main style={styles.main}>
@@ -662,7 +666,7 @@ export default function App() {
                       setBillingStartDate(tempBillingStart); 
                       setBillingEndDate(tempBillingEnd);
                       setShowBillingModal(false); 
-                  }} style={{ width: '100%', marginTop: '10px', padding: '10px', background: currentTheme.accent, color: darkMode ? '#112600' : '#ffffff', border: 'none', borderRadius: '50px', fontWeight: 'bold', cursor: 'pointer' }}>Save Changes</button>
+                  }} style={{ width: '100%', marginTop: '10px', padding: '10px', background: currentTheme.accent, color: darkMode ? '#181C14' : '#ffffff', border: 'none', borderRadius: '50px', fontWeight: 'bold', cursor: 'pointer' }}>Save Changes</button>
                   <button onClick={() => setShowBillingModal(false)} style={{ width: '100%', marginTop: '10px', padding: '10px', background: 'transparent', color: currentTheme.text, border: 'none', fontWeight: 'bold', cursor: 'pointer' }}>Cancel</button>
                 </div>
               </div>
@@ -754,42 +758,6 @@ export default function App() {
                       <label style={styles.label}>Link (Optional)</label>
                       <input type="url" style={styles.input} placeholder="https://..." value={timerData.link} onChange={e => setTimerData({...timerData, link: e.target.value})} disabled={timerStage === 'SV'} />
                   </div>
-                </div>
-              </div>
-            )}
-
-            {showEntryModal && (
-              <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0, 0, 0, 0.7)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 }}>
-                <div style={{ backgroundColor: currentTheme.cardBg, borderRadius: '8px', width: '100%', maxWidth: '480px', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)', border: `1px solid ${currentTheme.border}` }}>
-                  <div style={{ padding: '16px 24px', borderBottom: `1px solid ${currentTheme.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <h2 style={{ margin: 0, fontSize: '16px', fontWeight: 'bold', color: currentTheme.text }}>{isEditing ? 'Edit Entry' : 'New Entry'}</h2>
-                    <button onClick={() => setShowEntryModal(false)} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: currentTheme.text }}><X size={20}/></button>
-                  </div>
-                  <form onSubmit={handleSave} style={{ padding: '24px' }}>
-                    <div style={{ marginBottom: '16px' }}>
-                      <label style={styles.label}>File Name</label>
-                      <input 
-                        style={styles.input} 
-                        placeholder="e.g. Meeting_Audio_01 (Leave empty for Auto Name)" 
-                        value={formData.file_name} 
-                        onChange={e => setFormData({...formData, file_name: e.target.value})} 
-                      />
-                    </div>
-                    <div style={{ marginBottom: '16px' }}>
-                      <label style={styles.label}>File Type</label>
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-                        <div onClick={() => setFormData({...formData, client: 'Mantis'})} style={{...styles.radioLabel, ...(formData.client === 'Mantis' ? styles.radioActive : {})}}><div style={{width:'16px', height:'16px', borderRadius:'50%', border: `2px solid ${currentTheme.border}`, borderColor: formData.client === 'Mantis' ? currentTheme.accent : currentTheme.border, display:'flex', alignItems:'center', justifyContent:'center'}}>{formData.client === 'Mantis' && <div style={{width:'8px', height:'8px', borderRadius:'50%', backgroundColor: currentTheme.accent}} />}</div>Mantis</div>
-                        <div onClick={() => setFormData({...formData, client: 'Cricket'})} style={{...styles.radioLabel, ...(formData.client === 'Cricket' ? styles.radioActive : {})}}><div style={{width:'16px', height:'16px', borderRadius:'50%', border: `2px solid ${currentTheme.border}`, borderColor: formData.client === 'Cricket' ? currentTheme.accent : currentTheme.border, display:'flex', alignItems:'center', justifyContent:'center'}}>{formData.client === 'Cricket' && <div style={{width:'8px', height:'8px', borderRadius:'50%', backgroundColor: currentTheme.accent}} />}</div>Cricket</div>
-                      </div>
-                    </div>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
-                      <div><label style={styles.label}>Duration (HH:MM:SS)</label><input style={{...styles.input, fontFamily: 'monospace'}} placeholder="00:00:00" maxLength={8} value={formData.timeString} onChange={handleTimeChange} /></div>
-                      <div><label style={styles.label}>Date</label><input type="date" style={styles.input} value={formData.date} onChange={e => setFormData({...formData, date: e.target.value})} /></div>
-                    </div>
-                    <div style={{ marginBottom: '16px' }}><label style={styles.label}>Link</label><input type="url" style={styles.input} placeholder="https://..." value={formData.link} onChange={e => setFormData({...formData, link: e.target.value})} /></div>
-                    <div style={{ marginBottom: '24px' }}><label style={styles.label}>Status</label><select style={styles.input} value={formData.status} onChange={e => setFormData({...formData, status: e.target.value})}><option>In Progress</option><option>Pending QA</option><option>Completed</option></select></div>
-                    <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}><button type="button" onClick={() => setShowEntryModal(false)} style={{ padding: '10px 16px', border: 'none', background: 'transparent', color: currentTheme.text, fontWeight: '600', cursor: 'pointer' }}>Cancel</button><button type="submit" style={{ padding: '10px 20px', border: 'none', background: currentTheme.accent, color: darkMode ? '#112600' : '#ffffff', borderRadius: '50px', fontWeight: '600', cursor: 'pointer', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.2)' }}>{loading ? 'Saving...' : 'Save Entry'}</button></div>
-                  </form>
                 </div>
               </div>
             )}
