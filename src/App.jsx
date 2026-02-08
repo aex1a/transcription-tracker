@@ -33,10 +33,10 @@ const formatDate = (dateString) => {
 
 // --- Components ---
 
-// 1. LOCKED AUTH SCREEN (No Sign Up)
+// 1. LOCKED AUTH SCREEN (Updated for Username Login)
 const AuthScreen = () => {
   const [loading, setLoading] = useState(false);
-  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [msg, setMsg] = useState('');
 
@@ -45,9 +45,16 @@ const AuthScreen = () => {
     setLoading(true);
     setMsg('');
 
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    // SMART LOGIC: If they type "admin", automatically add "@tracker.com"
+    // This lets you log in with just a username.
+    const finalEmail = username.includes('@') ? username : `${username}@tracker.com`;
+
+    const { error } = await supabase.auth.signInWithPassword({ 
+      email: finalEmail, 
+      password 
+    });
+
     if (error) setMsg("Access Denied: Incorrect credentials.");
-    // App component listens to auth state and will switch view automatically on success
     setLoading(false);
   };
 
@@ -66,12 +73,25 @@ const AuthScreen = () => {
 
         <form onSubmit={handleLogin}>
           <div style={{ marginBottom: '16px' }}>
-            <label style={{ display: 'block', fontSize: '12px', fontWeight: '700', color: '#475569', marginBottom: '6px', textTransform: 'uppercase' }}>Email</label>
-            <input type="email" placeholder="user@tracker.com" required style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '15px', outline: 'none', transition: 'border 0.2s', boxSizing:'border-box' }} value={email} onChange={e => setEmail(e.target.value)} />
+            <label style={{ display: 'block', fontSize: '12px', fontWeight: '700', color: '#475569', marginBottom: '6px', textTransform: 'uppercase' }}>User</label>
+            <input 
+              type="text" 
+              placeholder="admin" 
+              required 
+              style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '15px', outline: 'none', transition: 'border 0.2s', boxSizing:'border-box' }} 
+              value={username} 
+              onChange={e => setUsername(e.target.value)} 
+            />
           </div>
           <div style={{ marginBottom: '24px' }}>
             <label style={{ display: 'block', fontSize: '12px', fontWeight: '700', color: '#475569', marginBottom: '6px', textTransform: 'uppercase' }}>Password</label>
-            <input type="password" required style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '15px', outline: 'none', transition: 'border 0.2s', boxSizing:'border-box' }} value={password} onChange={e => setPassword(e.target.value)} />
+            <input 
+              type="password" 
+              required 
+              style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '15px', outline: 'none', transition: 'border 0.2s', boxSizing:'border-box' }} 
+              value={password} 
+              onChange={e => setPassword(e.target.value)} 
+            />
           </div>
           <button type="submit" style={{ width: '100%', padding: '12px', background: '#4f46e5', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', fontSize: '15px', cursor: 'pointer', transition: 'background 0.2s' }}>
             {loading ? 'Verifying...' : 'Login'}
@@ -295,8 +315,8 @@ export default function App() {
               <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(15, 23, 42, 0.7)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 }}>
                 <div style={{ backgroundColor: 'white', borderRadius: '16px', width: '100%', maxWidth: '480px', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)', overflow: 'hidden' }}>
                   <div style={{ padding: '16px 24px', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <h2 style={{ margin: 0, fontSize: '16px', fontWeight: 'bold', color: '#0f172a' }}>{isEditing ? 'Edit Entry' : 'New Entry'}</h2>
-                    <button onClick={() => setView('dashboard')} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: '#64748b' }}><X size={20}/></button>
+                    <h2 style={{ margin: 0, fontSize: '16px', fontWeight: 'bold' }}>{isEditing ? 'Edit Entry' : 'New Entry'}</h2>
+                    <button onClick={() => setView('dashboard')} style={{ background: 'transparent', border: 'none', cursor: 'pointer' }}><X size={20}/></button>
                   </div>
                   
                   <form onSubmit={handleSave} style={{ padding: '24px' }}>
