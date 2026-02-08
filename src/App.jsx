@@ -62,35 +62,35 @@ const formatDate = (dateString) => {
 // --- Color Themes ---
 const themes = {
   light: {
-    // User requested specific "Light" mode colors:
-    bg: '#191414',           // Main Background (Dark)
-    text: '#ffffff',         // Font (White)
-    mutedText: '#b3b3b3',
-    sidebarBg: '#1db954',    // Sidebar (Spotify Green)
-    sidebarText: '#ffffff',  // Sidebar Font (White)
-    sidebarActiveBg: '#169c46', 
-    cardBg: '#282828',       // Card background to separate from main BG
-    border: '#1db954',       // Green borders
-    accent: '#1db954',
-    accentSec: '#ffffff',
-    tableHeaderBg: '#1db954',
+    bg: '#ffffff',
+    text: '#191414',         // Spotify Black
+    mutedText: '#535353',
+    sidebarBg: '#ffffff',    // UPDATED: White Sidebar
+    sidebarText: '#191414',
+    sidebarActiveBg: '#f6f6f6',
+    cardBg: '#ffffff',
+    border: '#d9d9d9',
+    accent: '#1db954',       // Spotify Green
+    accentSec: '#191414',
+    tableHeaderBg: '#1db954',// Green Header
     tableHeaderText: '#ffffff',
-    statCardShadow: '0 4px 6px -1px rgba(0,0,0,0.5)'
+    unnamedRowBg: '#fee2e2', // UPDATED: Reddish background for unnamed files
+    statCardShadow: '0 2px 8px rgba(0,0,0,0.1)'
   },
   dark: {
-    // User requested Dark mode colors:
-    bg: '#001524',           // Deep Navy/Black
-    text: '#ffffff',         // Font (White)
-    mutedText: '#9ca3af',
-    sidebarBg: '#445D48',    // Muted Forest Green
-    sidebarText: '#ffffff',
-    sidebarActiveBg: '#354a38',
-    cardBg: '#445D48',       // Cards match the secondary color
-    border: '#2a3c2e',       // Darker green border
-    accent: '#ffffff',       // White accents for contrast
-    accentSec: '#445D48',
-    tableHeaderBg: '#354a38',
-    tableHeaderText: '#ffffff',
+    bg: '#181C14',           // Darkest Black-Green
+    text: '#ECDFCC',         // Cream Text
+    mutedText: '#697565',    // Sage Green
+    sidebarBg: '#181C14',    // Match BG
+    sidebarText: '#ECDFCC',
+    sidebarActiveBg: '#3C3D37',
+    cardBg: '#3C3D37',       // Dark Olive Cards
+    border: '#697565',       // Sage Borders
+    accent: '#ECDFCC',       // Cream Accent
+    accentSec: '#697565',
+    tableHeaderBg: '#3C3D37',
+    tableHeaderText: '#ECDFCC',
+    unnamedRowBg: '#3f1a1a', // Dark Reddish for dark mode
     statCardShadow: '0 4px 6px -1px rgba(0,0,0,0.5)'
   }
 };
@@ -99,9 +99,8 @@ const themes = {
 
 const BillingCard = ({ label, count, hours, onEdit, onExport, theme, darkMode }) => (
   <div className="billing-card" style={{ 
-    // Light Mode: Black to Grey | Dark Mode: Navy to Green
-    background: darkMode ? 'linear-gradient(135deg, #001524 0%, #445D48 100%)' : 'linear-gradient(135deg, #191414 0%, #535353 100%)', 
-    borderRadius: '16px', 
+    background: darkMode ? 'linear-gradient(135deg, #3C3D37 0%, #181C14 100%)' : 'linear-gradient(135deg, #191414 0%, #1db954 100%)', 
+    borderRadius: '8px', 
     padding: '24px', 
     color: '#ffffff', 
     boxShadow: theme.statCardShadow, 
@@ -117,12 +116,12 @@ const BillingCard = ({ label, count, hours, onEdit, onExport, theme, darkMode })
       </button>
     </div>
     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '16px' }}>
-      <div><p style={{ fontSize: '13px', fontWeight: '600', opacity: 0.8, textTransform: 'uppercase', letterSpacing: '0.5px', color: '#ffffff' }}>Current Billing Cycle</p><p style={{ fontSize: '14px', fontWeight: 'bold', marginTop: '4px', color: '#ffffff' }}>{label}</p></div>
-      <CalendarDays size={24} style={{ opacity: 0.8, color: '#ffffff', marginRight: '80px' }} />
+      <div><p style={{ fontSize: '12px', fontWeight: '700', opacity: 0.9, textTransform: 'uppercase', letterSpacing: '1px', color: '#ffffff' }}>Current Billing Cycle</p><p style={{ fontSize: '14px', fontWeight: 'bold', marginTop: '4px', color: '#ffffff' }}>{label}</p></div>
+      <CalendarDays size={24} style={{ opacity: 0.9, color: '#ffffff', marginRight: '80px' }} />
     </div>
     <div className="billing-stats-grid">
-      <div><h3 style={{ fontSize: '32px', fontWeight: '800', lineHeight: '1' }}>{count}</h3><p style={{ fontSize: '13px', opacity: 0.8, marginTop: '4px', color: '#ffffff' }}>Files Completed</p></div>
-      <div className="billing-separator"><h3 style={{ fontSize: '32px', fontWeight: '800', lineHeight: '1' }}>{hours}</h3><p style={{ fontSize: '13px', opacity: 0.8, marginTop: '4px', color: '#ffffff' }}>Audio Hours</p></div>
+      <div><h3 style={{ fontSize: '32px', fontWeight: '900', lineHeight: '1' }}>{count}</h3><p style={{ fontSize: '13px', opacity: 0.9, marginTop: '4px', color: '#ffffff' }}>Files Completed</p></div>
+      <div className="billing-separator"><h3 style={{ fontSize: '32px', fontWeight: '900', lineHeight: '1' }}>{hours}</h3><p style={{ fontSize: '13px', opacity: 0.9, marginTop: '4px', color: '#ffffff' }}>Audio Hours</p></div>
     </div>
   </div>
 );
@@ -139,32 +138,32 @@ const StatCard = ({ title, value, icon: Icon, color, theme }) => (
       <p className="stat-title" style={{ color: theme.mutedText }}>{title}</p>
       <h3 className="stat-value" style={{ color: theme.text }}>{value}</h3>
     </div>
-    <div className="stat-icon" style={{ color: color, backgroundColor: 'rgba(255,255,255,0.1)' }}>
+    <div className="stat-icon" style={{ color: color, backgroundColor: 'rgba(100,100,100,0.1)' }}>
       <Icon size={24} />
     </div>
   </div>
 );
 
-const StatusBadge = ({ status, darkMode }) => {
+const StatusBadge = ({ status, darkMode, theme }) => {
   const c = { 
     'Completed': {
-        bg: darkMode ? '#001524' : '#1db954', 
-        t: '#ffffff', 
-        b: darkMode ? '#445D48' : '#1db954'
+        bg: darkMode ? '#697565' : '#1db954', 
+        t: darkMode ? '#ECDFCC' : '#ffffff', 
+        b: darkMode ? '#697565' : '#1db954'
     }, 
     'In Progress': {
-        bg: '#ffffff', 
-        t: '#000000', 
-        b: '#ffffff'
+        bg: darkMode ? '#3C3D37' : '#ffffff', 
+        t: darkMode ? '#ECDFCC' : '#191414', 
+        b: darkMode ? '#697565' : '#d1d5db'
     }, 
     'Pending QA': {
-        bg: darkMode ? '#2a3c2e' : '#282828', 
-        t: '#ffffff', 
-        b: darkMode ? '#445D48' : '#191414'
+        bg: darkMode ? '#3f1a1a' : '#ffedd5', 
+        t: darkMode ? '#ECDFCC' : '#c2410c', 
+        b: darkMode ? '#3f1a1a' : '#fdba74'
     } 
   }[status] || {bg:'#f3f4f6', t:'#374151', b:'#e5e7eb'};
   
-  return <span style={{ backgroundColor: c.bg, color: c.t, border: `1px solid ${c.b}`, padding: '4px 10px', borderRadius: '999px', fontSize: '11px', fontWeight: '700', textTransform: 'uppercase' }}>{status}</span>;
+  return <span style={{ backgroundColor: c.bg, color: c.t, border: `1px solid ${c.b}`, padding: '4px 10px', borderRadius: '50px', fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing:'0.5px' }}>{status}</span>;
 };
 
 export default function App() {
@@ -172,7 +171,6 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState('dashboard');
   
-  // THEME STATE
   const [darkMode, setDarkMode] = useState(() => localStorage.getItem('trackscribe_theme') === 'dark');
   const currentTheme = darkMode ? themes.dark : themes.light;
 
@@ -501,32 +499,33 @@ export default function App() {
   const sortedJobs = [...filteredJobs].sort((a, b) => { if (sortConfig.key === 'date') { return sortConfig.direction === 'asc' ? new Date(a.date) - new Date(b.date) : new Date(b.date) - new Date(a.date); } if (sortConfig.key === 'client') { const valA = (a.client || '').toLowerCase(); const valB = (b.client || '').toLowerCase(); if (valA < valB) return sortConfig.direction === 'asc' ? -1 : 1; if (valA > valB) return sortConfig.direction === 'asc' ? 1 : -1; return 0; } if (sortConfig.key === 'status') { const statusOrder = { 'In Progress': 1, 'Pending QA': 2, 'Completed': 3 }; const valA = statusOrder[a.status] || 99; const valB = statusOrder[b.status] || 99; return sortConfig.direction === 'asc' ? valA - valB : valB - valA; } return 0; });
   const chartData = jobs.reduce((acc, job) => { const d = job.date; const f = acc.find(i => i.date === d); const m = Math.floor((job.total_seconds || 0) / 60); if (f) f.minutes += m; else acc.push({ date: d, minutes: m }); return acc; }, []).sort((a, b) => new Date(a.date) - new Date(b.date)).slice(-7);
 
+  // --- STYLES ---
   const styles = {
-    container: { fontFamily: 'Inter, sans-serif', backgroundColor: currentTheme.bg, minHeight: '100vh', display: 'flex', flexDirection: 'column' },
+    container: { fontFamily: '"Circular", "Helvetica Neue", "Helvetica", "Arial", sans-serif', backgroundColor: currentTheme.bg, minHeight: '100vh', display: 'flex', flexDirection: 'column' },
     
-    // Sidebar: Light Mode = #1db954 (Green) | Dark Mode = #445D48 (Forest)
+    // Sidebar:
     sidebar: { width: '250px', backgroundColor: currentTheme.sidebarBg, borderRight: `1px solid ${currentTheme.border}`, display: 'flex', flexDirection: 'column', position: 'fixed', height: '100%', zIndex: 50, transition: 'transform 0.3s ease', transform: isMobile && !showMobileMenu ? 'translateX(-100%)' : 'translateX(0)' },
     
     main: { flex: 1, marginLeft: isMobile ? '0' : '250px', padding: isMobile ? '1rem' : '2rem', overflowY: 'auto' },
     
     navBtn: { display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 20px', width: '100%', background: 'transparent', border: 'none', color: currentTheme.sidebarText, cursor: 'pointer', fontSize: '14px', fontWeight: '500', transition: 'all 0.2s', margin: '4px 0', borderRadius: '0 20px 20px 0', opacity: 0.8 },
-    navBtnActive: { backgroundColor: currentTheme.sidebarActiveBg, color: '#ffffff', fontWeight: '700', opacity: 1, borderLeft: `4px solid #ffffff` },
+    navBtnActive: { backgroundColor: currentTheme.sidebarActiveBg, color: currentTheme.sidebarText, fontWeight: '700', opacity: 1, borderLeft: `4px solid ${currentTheme.accent}` },
     
     input: { width: '100%', padding: '10px 14px', borderRadius: '8px', border: `1px solid ${currentTheme.border}`, fontSize: '14px', outline: 'none', backgroundColor: currentTheme.cardBg, boxSizing:'border-box', color: currentTheme.text },
-    label: { display: 'block', marginBottom: '6px', fontSize: '14px', fontWeight: '600', color: currentTheme.text },
+    label: { display: 'block', marginBottom: '6px', fontSize: '14px', fontWeight: '700', color: currentTheme.text },
     
-    table: { width: '100%', borderCollapse: 'collapse', backgroundColor: currentTheme.cardBg, borderRadius: '12px', overflow: 'hidden', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)', border: `1px solid ${currentTheme.border}` },
-    th: { backgroundColor: currentTheme.tableHeaderBg, color: currentTheme.tableHeaderText, padding: '12px 16px', textAlign: 'left', fontSize: '11px', fontWeight: '800', textTransform: 'uppercase', borderBottom: `1px solid ${currentTheme.border}` },
+    table: { width: '100%', borderCollapse: 'collapse', backgroundColor: currentTheme.cardBg, borderRadius: '8px', overflow: 'hidden', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)', border: `1px solid ${currentTheme.border}` },
+    th: { backgroundColor: currentTheme.tableHeaderBg, color: currentTheme.tableHeaderText, padding: '12px 16px', textAlign: 'left', fontSize: '12px', fontWeight: '900', textTransform: 'uppercase', letterSpacing:'1px', borderBottom: `1px solid ${currentTheme.border}` },
     thClickable: { cursor: 'pointer', userSelect: 'none', display:'flex', alignItems:'center', gap:'6px' },
     td: { padding: '14px 16px', borderBottom: `1px solid ${currentTheme.border}`, fontSize: '14px', color: currentTheme.text },
     tdWrapper: { width: '100%', height: '100%', whiteSpace: 'nowrap', overflowX: 'auto', overflowY: 'hidden', display: 'block' },
     radioLabel: { display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', cursor: 'pointer', padding: '10px', borderRadius: '8px', border: `1px solid ${currentTheme.border}`, backgroundColor: currentTheme.cardBg, color: currentTheme.text },
     radioActive: { backgroundColor: currentTheme.accent, borderColor: currentTheme.accent, color: darkMode ? '#112600' : '#ffffff', fontWeight: '700' },
-    primaryBtn: { backgroundColor: currentTheme.accent, color: darkMode ? '#112600' : '#ffffff', padding: '8px 16px', borderRadius: '8px', border: 'none', fontWeight: '600', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', boxShadow: '0 2px 4px rgba(0, 0, 0, 0.3)' },
+    primaryBtn: { backgroundColor: currentTheme.accent, color: darkMode ? '#112600' : '#ffffff', padding: '8px 16px', borderRadius: '50px', border: 'none', fontWeight: '700', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', boxShadow: '0 2px 4px rgba(0, 0, 0, 0.3)', textTransform: 'uppercase', letterSpacing: '1px' },
     
-    timerDisplay: { fontSize: '48px', fontWeight: 'bold', fontFamily: 'monospace', color: currentTheme.accent, textAlign: 'center', margin: '20px 0' },
+    timerDisplay: { fontSize: '48px', fontWeight: '900', fontFamily: 'monospace', color: currentTheme.accent, textAlign: 'center', margin: '20px 0' },
     timerControls: { display: 'flex', justifyContent: 'center', gap: '20px', marginBottom: '20px' },
-    controlBtn: { display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 20px', borderRadius: '8px', border: 'none', fontWeight: '600', cursor: 'pointer', fontSize: '14px' },
+    controlBtn: { display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 20px', borderRadius: '50px', border: 'none', fontWeight: '700', cursor: 'pointer', fontSize: '14px', letterSpacing:'0.5px' },
     startBtn: { backgroundColor: currentTheme.accent, color: darkMode ? '#112600' : '#ffffff' },
     pauseBtn: { backgroundColor: currentTheme.border, color: currentTheme.text },
     stopBtn: { backgroundColor: '#ef4444', color: 'white' },
@@ -545,12 +544,11 @@ export default function App() {
         .billing-stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
         .billing-separator { border-left: 1px solid rgba(255, 255, 255, 0.3); padding-left: 20px; }
         
-        /* RESTORED STAT CARD STYLES */
-        .stat-card { padding: 20px; border-radius: 12px; display: flex; align-items: center; justify-content: space-between; transition: transform 0.2s; }
+        .stat-card { padding: 24px; border-radius: 8px; display: flex; align-items: center; justify-content: space-between; transition: transform 0.2s; }
         .stat-card:hover { transform: translateY(-2px); }
-        .stat-title { font-size: 11px; font-weight: 700; text-transform: uppercase; margin-bottom: 4px; letter-spacing: 0.5px; }
-        .stat-value { font-size: 24px; font-weight: 800; margin: 0; }
-        .stat-icon { width: 44px; height: 44px; border-radius: 10px; display: flex; align-items: center; justify-content: center; }
+        .stat-title { font-size: 12px; font-weight: 700; text-transform: uppercase; margin-bottom: 4px; letter-spacing: 1px; }
+        .stat-value { font-size: 28px; font-weight: 900; margin: 0; }
+        .stat-icon { width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; }
 
         @media (max-width: 768px) {
             .billing-stats-grid { grid-template-columns: 1fr; gap: 10px; }
@@ -575,8 +573,8 @@ export default function App() {
       <aside style={styles.sidebar}>
         <div style={{ padding: '24px', borderBottom: `1px solid ${currentTheme.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <h2 style={{ fontSize: '18px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '10px', margin: 0 }}>
-            <div style={{ background: currentTheme.sidebarText, width: '28px', height: '28px', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: currentTheme.sidebarBg, fontWeight: '900' }}>T</div>
-            <span style={{color: currentTheme.sidebarText}}>TrackScribe</span>
+            <div style={{ background: currentTheme.accent, width: '28px', height: '28px', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: darkMode ? '#112600' : '#ffffff', fontWeight: '900' }}>T</div>
+            <span style={{color: currentTheme.sidebarText, fontFamily: 'Circular, sans-serif', fontWeight: '900', letterSpacing:'-0.5px'}}>TrackScribe</span>
           </h2>
           <button onClick={() => setDarkMode(!darkMode)} style={{background:'transparent', border:'none', cursor:'pointer', color: currentTheme.sidebarText}}>
             {darkMode ? <Sun size={20}/> : <Moon size={20}/>}
@@ -601,8 +599,8 @@ export default function App() {
               <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
                 {!isMobile && (
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-                    <h2 style={{ fontSize: '24px', fontWeight: 'bold', color: currentTheme.text, margin: 0 }}>Dashboard</h2>
-                    <button onClick={openNewEntry} style={styles.primaryBtn}><Plus size={16} /> Add New Entry</button>
+                    <h2 style={{ fontSize: '28px', fontWeight: '900', color: currentTheme.text, margin: 0, letterSpacing:'-1px' }}>Dashboard</h2>
+                    <button onClick={openNewEntry} style={styles.primaryBtn}><Plus size={16} /> ADD NEW ENTRY</button>
                     </div>
                 )}
                 
@@ -624,16 +622,16 @@ export default function App() {
                 
                 <div className="dashboard-grid">
                     <StatCard title="Total Lifetime Files" value={jobs.filter(j => j.status === 'Completed').length} icon={CheckCircle2} color={currentTheme.accent} theme={currentTheme} />
-                    <StatCard title="Pending Review" value={jobs.filter(j => j.status === 'Pending QA').length} icon={AlertCircle} color={darkMode ? '#ffffff' : '#191414'} theme={currentTheme} />
+                    <StatCard title="Pending Review" value={jobs.filter(j => j.status === 'Pending QA').length} icon={AlertCircle} color={darkMode ? '#9fe870' : '#c2410c'} theme={currentTheme} />
                 </div>
 
-                <div style={{ background: currentTheme.cardBg, padding: '24px', borderRadius: '16px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)', border: `1px solid ${currentTheme.border}` }}><h3 style={{ fontWeight: 'bold', marginBottom: '20px', fontSize: '14px', textTransform:'uppercase', color: currentTheme.mutedText }}>Weekly Output (Minutes)</h3><div style={{ height: '250px' }}><ResponsiveContainer width="100%" height="100%"><BarChart data={chartData}><CartesianGrid strokeDasharray="3 3" vertical={false} stroke={currentTheme.border} /><XAxis dataKey="date" axisLine={false} tickLine={false} tickFormatter={(str) => new Date(str).toLocaleDateString(undefined, {weekday: 'short'})} /><YAxis axisLine={false} tickLine={false} /><Tooltip cursor={{fill: 'transparent'}} /><Bar dataKey="minutes" fill={currentTheme.accent} radius={[4, 4, 4, 4]} barSize={32} /></BarChart></ResponsiveContainer></div></div>
+                <div style={{ background: currentTheme.cardBg, padding: '24px', borderRadius: '8px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)', border: `1px solid ${currentTheme.border}` }}><h3 style={{ fontWeight: '700', marginBottom: '20px', fontSize: '14px', textTransform:'uppercase', color: currentTheme.mutedText, letterSpacing:'1px' }}>Weekly Output (Minutes)</h3><div style={{ height: '250px' }}><ResponsiveContainer width="100%" height="100%"><BarChart data={chartData}><CartesianGrid strokeDasharray="3 3" vertical={false} stroke={currentTheme.border} /><XAxis dataKey="date" axisLine={false} tickLine={false} tickFormatter={(str) => new Date(str).toLocaleDateString(undefined, {weekday: 'short'})} /><YAxis axisLine={false} tickLine={false} /><Tooltip cursor={{fill: 'transparent'}} /><Bar dataKey="minutes" fill={currentTheme.accent} radius={[4, 4, 4, 4]} barSize={32} /></BarChart></ResponsiveContainer></div></div>
               </div>
             )}
 
             {showBillingModal && (
               <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0, 0, 0, 0.8)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 }}>
-                <div style={{ backgroundColor: currentTheme.cardBg, borderRadius: '16px', width: '100%', maxWidth: '350px', padding: '24px', border: `1px solid ${currentTheme.border}` }}>
+                <div style={{ backgroundColor: currentTheme.cardBg, borderRadius: '8px', width: '100%', maxWidth: '350px', padding: '24px', border: `1px solid ${currentTheme.border}` }}>
                   <h3 style={{ margin: '0 0 16px 0', fontSize: '16px', fontWeight: 'bold', color: currentTheme.text }}>Billing Settings</h3>
                   
                   <div style={{marginBottom:'12px'}}>
@@ -664,7 +662,7 @@ export default function App() {
                       setBillingStartDate(tempBillingStart); 
                       setBillingEndDate(tempBillingEnd);
                       setShowBillingModal(false); 
-                  }} style={{ width: '100%', marginTop: '10px', padding: '10px', background: currentTheme.accent, color: darkMode ? '#112600' : '#ffffff', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}>Save Changes</button>
+                  }} style={{ width: '100%', marginTop: '10px', padding: '10px', background: currentTheme.accent, color: darkMode ? '#112600' : '#ffffff', border: 'none', borderRadius: '50px', fontWeight: 'bold', cursor: 'pointer' }}>Save Changes</button>
                   <button onClick={() => setShowBillingModal(false)} style={{ width: '100%', marginTop: '10px', padding: '10px', background: 'transparent', color: currentTheme.text, border: 'none', fontWeight: 'bold', cursor: 'pointer' }}>Cancel</button>
                 </div>
               </div>
@@ -672,9 +670,9 @@ export default function App() {
 
             {view === 'timer' && (
               <div style={{ maxWidth: '600px', margin: '0 auto' }}>
-                <h2 style={{ fontSize: '24px', fontWeight: 'bold', color: currentTheme.text, marginBottom: '24px' }}>TAT Timer</h2>
+                <h2 style={{ fontSize: '28px', fontWeight: '900', color: currentTheme.text, marginBottom: '24px', letterSpacing:'-1px' }}>TAT Timer</h2>
                 
-                <div style={{ backgroundColor: currentTheme.cardBg, padding: '24px', borderRadius: '16px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)', border: `1px solid ${currentTheme.border}` }}>
+                <div style={{ backgroundColor: currentTheme.cardBg, padding: '24px', borderRadius: '8px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)', border: `1px solid ${currentTheme.border}` }}>
                   
                   <div style={{display:'flex', gap:'10px', marginBottom:'24px'}}>
                     <div style={{...styles.stageOption, ...(timerStage === 'FR' ? styles.stageActive : {})}}>
@@ -733,21 +731,21 @@ export default function App() {
                   <div style={{...styles.timerControls, flexDirection: isMobile ? 'column' : 'row'}}>
                     {!timerRunning ? (
                         <button onClick={handleTimerStartPause} style={{...styles.controlBtn, ...styles.startBtn}} disabled={totalTat === 0}>
-                            <Play size={16} fill={darkMode ? '#112600' : '#ffffff'} /> Start Timer
+                            <Play size={16} fill={darkMode ? '#112600' : '#ffffff'} /> START TIMER
                         </button>
                     ) : (
                         <button onClick={handleTimerStartPause} style={{...styles.controlBtn, ...styles.pauseBtn}}>
-                            <Pause size={16} fill={currentTheme.text} /> Pause
+                            <Pause size={16} fill={currentTheme.text} /> PAUSE
                         </button>
                     )}
 
                     {timerStage === 'FR' ? (
                         <button onClick={handleFinishFR} style={{...styles.controlBtn, backgroundColor: currentTheme.text, color: currentTheme.cardBg}} disabled={totalTat === 0}>
-                            <ArrowRight size={16} /> Finish FR & Go to SV
+                            <ArrowRight size={16} /> FINISH FR & GO TO SV
                         </button>
                     ) : (
                         <button onClick={handleFinishSV} style={{...styles.controlBtn, ...styles.startBtn}} disabled={totalTat === 0}>
-                            <Check size={16} /> Finish All & Complete
+                            <Check size={16} /> FINISH ALL & COMPLETE
                         </button>
                     )}
                   </div>
@@ -762,7 +760,7 @@ export default function App() {
 
             {showEntryModal && (
               <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0, 0, 0, 0.7)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 }}>
-                <div style={{ backgroundColor: currentTheme.cardBg, borderRadius: '16px', width: '100%', maxWidth: '480px', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)', border: `1px solid ${currentTheme.border}` }}>
+                <div style={{ backgroundColor: currentTheme.cardBg, borderRadius: '8px', width: '100%', maxWidth: '480px', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)', border: `1px solid ${currentTheme.border}` }}>
                   <div style={{ padding: '16px 24px', borderBottom: `1px solid ${currentTheme.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <h2 style={{ margin: 0, fontSize: '16px', fontWeight: 'bold', color: currentTheme.text }}>{isEditing ? 'Edit Entry' : 'New Entry'}</h2>
                     <button onClick={() => setShowEntryModal(false)} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: currentTheme.text }}><X size={20}/></button>
@@ -790,7 +788,7 @@ export default function App() {
                     </div>
                     <div style={{ marginBottom: '16px' }}><label style={styles.label}>Link</label><input type="url" style={styles.input} placeholder="https://..." value={formData.link} onChange={e => setFormData({...formData, link: e.target.value})} /></div>
                     <div style={{ marginBottom: '24px' }}><label style={styles.label}>Status</label><select style={styles.input} value={formData.status} onChange={e => setFormData({...formData, status: e.target.value})}><option>In Progress</option><option>Pending QA</option><option>Completed</option></select></div>
-                    <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}><button type="button" onClick={() => setShowEntryModal(false)} style={{ padding: '10px 16px', border: 'none', background: 'transparent', color: currentTheme.text, fontWeight: '600', cursor: 'pointer' }}>Cancel</button><button type="submit" style={{ padding: '10px 20px', border: 'none', background: currentTheme.accent, color: darkMode ? '#112600' : '#ffffff', borderRadius: '8px', fontWeight: '600', cursor: 'pointer', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.2)' }}>{loading ? 'Saving...' : 'Save Entry'}</button></div>
+                    <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}><button type="button" onClick={() => setShowEntryModal(false)} style={{ padding: '10px 16px', border: 'none', background: 'transparent', color: currentTheme.text, fontWeight: '600', cursor: 'pointer' }}>Cancel</button><button type="submit" style={{ padding: '10px 20px', border: 'none', background: currentTheme.accent, color: darkMode ? '#112600' : '#ffffff', borderRadius: '50px', fontWeight: '600', cursor: 'pointer', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.2)' }}>{loading ? 'Saving...' : 'Save Entry'}</button></div>
                   </form>
                 </div>
               </div>
@@ -799,18 +797,18 @@ export default function App() {
             {view === 'list' && (
               <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
                 <div style={{ display: 'flex', flexWrap:'wrap', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', gap:'10px' }}>
-                  {!isMobile && <div style={{display:'flex', alignItems:'center', gap:'16px'}}><h2 style={{ fontSize: '24px', fontWeight: 'bold', color: currentTheme.text, margin: '0' }}>File History</h2><button onClick={openNewEntry} style={styles.primaryBtn}><Plus size={16} /> Add New</button></div>}
+                  {!isMobile && <div style={{display:'flex', alignItems:'center', gap:'16px'}}><h2 style={{ fontSize: '28px', fontWeight: '900', color: currentTheme.text, margin: '0', letterSpacing:'-1px' }}>File History</h2><button onClick={openNewEntry} style={styles.primaryBtn}><Plus size={16} /> ADD NEW</button></div>}
                   <div style={{ display: 'flex', flexDirection:'column', alignItems: 'flex-end', gap: '8px', width: isMobile ? '100%' : 'auto' }}>
-                    <div style={{ background: currentTheme.accent, color: darkMode ? '#112600' : '#ffffff', padding: '8px 12px', borderRadius: '8px', fontWeight: '700', fontSize: '13px', border: `1px solid ${currentTheme.border}`, display:'flex', gap:'8px', width: isMobile ? '100%' : 'auto', justifyContent: isMobile ? 'center' : 'flex-start' }}><span>Total: {formatDecimalHours(listTotalSeconds)}</span><span style={{opacity:0.6}}>|</span><span>{formatDuration(listTotalSeconds)}</span></div>
+                    <div style={{ background: currentTheme.accent, color: darkMode ? '#112600' : '#ffffff', padding: '8px 12px', borderRadius: '50px', fontWeight: '700', fontSize: '13px', border: `1px solid ${currentTheme.border}`, display:'flex', gap:'8px', width: isMobile ? '100%' : 'auto', justifyContent: isMobile ? 'center' : 'flex-start' }}><span>Total: {formatDecimalHours(listTotalSeconds)}</span><span style={{opacity:0.6}}>|</span><span>{formatDuration(listTotalSeconds)}</span></div>
                     <div style={{display:'flex', gap:'8px', alignItems:'center', flexWrap: 'wrap', width: isMobile ? '100%' : 'auto'}}>
-                        {hasActiveFilters && (<button onClick={clearAllFilters} style={{display:'flex', alignItems:'center', gap:'4px', border:'none', background:'#fee2e2', color:'#ef4444', borderRadius:'8px', padding:'0 10px', height:'34px', cursor:'pointer', fontSize:'12px', fontWeight:'bold'}}><RotateCcw size={12} /> Clear</button>)}
-                        <select value={filterType} onChange={(e) => setFilterType(e.target.value)} style={{padding: '8px', borderRadius: '8px', border: `1px solid ${currentTheme.border}`, fontSize: '13px', cursor:'pointer', backgroundColor: currentTheme.cardBg, height:'34px', flex: isMobile ? 1 : 'unset', color: currentTheme.text}}><option value="All">All Types</option><option value="Mantis">Mantis</option><option value="Cricket">Cricket</option></select>
-                        <input type="date" value={filterDate} onChange={(e) => setFilterDate(e.target.value)} style={{padding: '8px', borderRadius: '8px', border: `1px solid ${currentTheme.border}`, fontSize: '13px', backgroundColor: currentTheme.cardBg, height:'34px', boxSizing:'border-box', flex: isMobile ? 1 : 'unset', color: currentTheme.text}} />
-                        <div style={{position:'relative', width: isMobile ? '100%' : 'auto'}}><Search size={16} style={{position:'absolute', left:'10px', top:'9px', opacity:0.4}} /><input style={{...styles.input, width: isMobile ? '100%' : '200px', backgroundColor: currentTheme.cardBg, paddingLeft:'32px', height:'34px', color: currentTheme.text}} placeholder="Search..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} /></div>
+                        {hasActiveFilters && (<button onClick={clearAllFilters} style={{display:'flex', alignItems:'center', gap:'4px', border:'none', background:'#fee2e2', color:'#ef4444', borderRadius:'50px', padding:'0 10px', height:'34px', cursor:'pointer', fontSize:'12px', fontWeight:'bold'}}><RotateCcw size={12} /> Clear</button>)}
+                        <select value={filterType} onChange={(e) => setFilterType(e.target.value)} style={{padding: '8px', borderRadius: '50px', border: `1px solid ${currentTheme.border}`, fontSize: '13px', cursor:'pointer', backgroundColor: currentTheme.cardBg, height:'34px', flex: isMobile ? 1 : 'unset', color: currentTheme.text}}><option value="All">All Types</option><option value="Mantis">Mantis</option><option value="Cricket">Cricket</option></select>
+                        <input type="date" value={filterDate} onChange={(e) => setFilterDate(e.target.value)} style={{padding: '8px', borderRadius: '50px', border: `1px solid ${currentTheme.border}`, fontSize: '13px', backgroundColor: currentTheme.cardBg, height:'34px', boxSizing:'border-box', flex: isMobile ? 1 : 'unset', color: currentTheme.text}} />
+                        <div style={{position:'relative', width: isMobile ? '100%' : 'auto'}}><Search size={16} style={{position:'absolute', left:'10px', top:'9px', opacity:0.4}} /><input style={{...styles.input, width: isMobile ? '100%' : '200px', backgroundColor: currentTheme.cardBg, paddingLeft:'32px', height:'34px', color: currentTheme.text, borderRadius:'50px'}} placeholder="Search..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} /></div>
                     </div>
                   </div>
                 </div>
-                <div style={{ overflowX: 'auto', borderRadius: '12px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)', border: `1px solid ${currentTheme.border}` }}>
+                <div style={{ overflowX: 'auto', borderRadius: '8px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)', border: `1px solid ${currentTheme.border}` }}>
                   <table style={styles.table}>
                     <thead>
                       <tr>
@@ -825,7 +823,7 @@ export default function App() {
                     </thead>
                     <tbody>
                       {sortedJobs.length > 0 ? sortedJobs.map(job => (
-                        <tr key={job.id} style={{ borderBottom: `1px solid ${currentTheme.border}`, backgroundColor: job.file_name.startsWith('Unnamed File') ? (darkMode ? '#451a03' : '#fff0f0') : currentTheme.cardBg }}>
+                        <tr key={job.id} style={{ borderBottom: `1px solid ${currentTheme.border}`, backgroundColor: job.file_name.startsWith('Unnamed File') ? currentTheme.unnamedRowBg : currentTheme.cardBg }}>
                           <td style={styles.td}>{formatDate(job.date)}</td>
                           <td style={{...styles.td, width: `${colWidth}px`, minWidth: `${colWidth}px`, maxWidth: `${colWidth}px`}}><div style={styles.tdWrapper} className="no-scrollbar" title={job.file_name}>{job.file_name}</div></td>
                           <td style={{...styles.td, display: isMobile ? 'none' : 'table-cell'}}>{job.client||'-'}</td>
