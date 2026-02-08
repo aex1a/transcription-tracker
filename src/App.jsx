@@ -3,11 +3,22 @@ import { supabase } from './supabase';
 import { 
   LayoutDashboard, Plus, List, 
   Trash2, Edit2, ExternalLink, Search, 
-  CheckCircle2, Clock, AlertCircle, Loader2, X, CalendarDays, Settings, LogOut, Lock
+  CheckCircle2, Clock, AlertCircle, Loader2, X, CalendarDays, Settings
 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 
 // --- Utility Functions ---
+
+// 1. GENERATE INVISIBLE ID
+// This checks if the user already has an ID. If not, it makes one.
+const getDeviceId = () => {
+  let id = localStorage.getItem('trackscribe_device_id');
+  if (!id) {
+    id = 'user_' + Math.random().toString(36).substr(2, 9);
+    localStorage.setItem('trackscribe_device_id', id);
+  }
+  return id;
+};
 
 const formatDecimalHours = (totalSeconds) => {
   if (!totalSeconds) return '0.00';
@@ -32,75 +43,6 @@ const formatDate = (dateString) => {
 };
 
 // --- Components ---
-
-// 1. LOCKED AUTH SCREEN (Updated for Username Login)
-const AuthScreen = () => {
-  const [loading, setLoading] = useState(false);
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-  const [msg, setMsg] = useState('');
-
-  const handleLogin = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    setMsg('');
-
-    // SMART LOGIC: If they type "admin", automatically add "@tracker.com"
-    // This lets you log in with just a username.
-    const finalEmail = username.includes('@') ? username : `${username}@tracker.com`;
-
-    const { error } = await supabase.auth.signInWithPassword({ 
-      email: finalEmail, 
-      password 
-    });
-
-    if (error) setMsg("Access Denied: Incorrect credentials.");
-    setLoading(false);
-  };
-
-  return (
-    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#f1f5f9', padding: '20px', fontFamily: 'Inter, sans-serif' }}>
-      <div style={{ backgroundColor: 'white', padding: '40px', borderRadius: '16px', boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1)', width: '100%', maxWidth: '400px' }}>
-        <div style={{ textAlign: 'center', marginBottom: '30px' }}>
-          <div style={{ background: '#4f46e5', width: '56px', height: '56px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px', color: 'white' }}>
-            <Lock size={28} />
-          </div>
-          <h2 style={{ fontSize: '24px', fontWeight: '800', color: '#0f172a', marginBottom: '8px' }}>TrackScribe</h2>
-          <p style={{ color: '#64748b', fontSize: '14px' }}>Authorized Personnel Only</p>
-        </div>
-
-        {msg && <div style={{ backgroundColor: '#fee2e2', color: '#991b1b', padding: '12px', borderRadius: '8px', marginBottom: '20px', fontSize: '13px', textAlign: 'center', fontWeight: '500' }}>{msg}</div>}
-
-        <form onSubmit={handleLogin}>
-          <div style={{ marginBottom: '16px' }}>
-            <label style={{ display: 'block', fontSize: '12px', fontWeight: '700', color: '#475569', marginBottom: '6px', textTransform: 'uppercase' }}>User</label>
-            <input 
-              type="text" 
-              placeholder="admin" 
-              required 
-              style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '15px', outline: 'none', transition: 'border 0.2s', boxSizing:'border-box' }} 
-              value={username} 
-              onChange={e => setUsername(e.target.value)} 
-            />
-          </div>
-          <div style={{ marginBottom: '24px' }}>
-            <label style={{ display: 'block', fontSize: '12px', fontWeight: '700', color: '#475569', marginBottom: '6px', textTransform: 'uppercase' }}>Password</label>
-            <input 
-              type="password" 
-              required 
-              style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '15px', outline: 'none', transition: 'border 0.2s', boxSizing:'border-box' }} 
-              value={password} 
-              onChange={e => setPassword(e.target.value)} 
-            />
-          </div>
-          <button type="submit" style={{ width: '100%', padding: '12px', background: '#4f46e5', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', fontSize: '15px', cursor: 'pointer', transition: 'background 0.2s' }}>
-            {loading ? 'Verifying...' : 'Login'}
-          </button>
-        </form>
-      </div>
-    </div>
-  );
-};
 
 const BillingCard = ({ label, count, hours, onEdit }) => (
   <div style={{ background: 'linear-gradient(135deg, #4f46e5 0%, #312e81 100%)', borderRadius: '16px', padding: '24px', color: 'white', boxShadow: '0 10px 15px -3px rgba(79, 70, 229, 0.3)', position: 'relative' }}>
@@ -131,7 +73,6 @@ const StatusBadge = ({ status }) => {
 };
 
 export default function App() {
-  const [session, setSession] = useState(null);
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState('dashboard');
@@ -144,21 +85,9 @@ export default function App() {
   const [formData, setFormData] = useState({ file_name: '', client: '', timeString: '', date: new Date().toISOString().split('T')[0], link: '', notes: '', status: 'In Progress' });
   const [isEditing, setIsEditing] = useState(null);
 
-  // --- Auth & Data Fetching ---
+  // --- Data Fetching ---
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      if (session) fetchJobs();
-      else setLoading(false);
-    });
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-      if (session) fetchJobs();
-      else setJobs([]); 
-    });
-
-    return () => subscription.unsubscribe();
+    fetchJobs();
   }, []);
 
   // Save billing preference
@@ -168,20 +97,24 @@ export default function App() {
 
   const fetchJobs = async () => {
     setLoading(true);
-    let { data, error } = await supabase.from('jobs').select('*').order('created_at', { ascending: false });
+    const deviceId = getDeviceId(); // Get the invisible ID
+
+    // Filter: Only ask Supabase for rows that have this device ID
+    let { data, error } = await supabase
+      .from('jobs')
+      .select('*')
+      .eq('user_id', deviceId) // <--- THIS IS THE PRIVACY FILTER
+      .order('created_at', { ascending: false });
+
     if (!error) setJobs(data || []);
     setLoading(false);
   };
 
   // --- Handlers ---
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-    setJobs([]);
-  };
-
   const handleSave = async (e) => {
     e.preventDefault();
     setLoading(true);
+    const deviceId = getDeviceId();
 
     let h = 0, m = 0, s = 0;
     const parts = formData.timeString.split(':').map(Number);
@@ -195,7 +128,7 @@ export default function App() {
       hours: h, minutes: m, seconds: s, date: formData.date, 
       link: formData.link, notes: formData.notes, status: formData.status, 
       total_seconds: totalSeconds, total_minutes: Math.floor(totalSeconds / 60),
-      user_id: session.user.id // Link to user
+      user_id: deviceId // <--- Save with the invisible ID
     };
 
     if (isEditing) await supabase.from('jobs').update(payload).eq('id', isEditing);
@@ -262,9 +195,6 @@ export default function App() {
     td: { padding: '14px 16px', borderBottom: '1px solid #f1f5f9', fontSize: '14px', color: '#334155' }
   };
 
-  // --- RENDER ---
-  if (!session) return <AuthScreen />;
-
   return (
     <div style={styles.container}>
       <aside style={styles.sidebar} className="hidden-on-mobile">
@@ -281,9 +211,6 @@ export default function App() {
             </button>
           ))}
         </nav>
-        <div style={{ padding: '20px', borderTop: '1px solid #1e293b' }}>
-          <button onClick={handleLogout} style={{ ...styles.navBtn, color: '#ef4444' }}><LogOut size={18} /> Sign Out</button>
-        </div>
       </aside>
 
       <main style={{ ...styles.main, marginLeft: window.innerWidth < 768 ? '0' : '250px' }}>
@@ -315,8 +242,8 @@ export default function App() {
               <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(15, 23, 42, 0.7)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 }}>
                 <div style={{ backgroundColor: 'white', borderRadius: '16px', width: '100%', maxWidth: '480px', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)', overflow: 'hidden' }}>
                   <div style={{ padding: '16px 24px', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <h2 style={{ margin: 0, fontSize: '16px', fontWeight: 'bold' }}>{isEditing ? 'Edit Entry' : 'New Entry'}</h2>
-                    <button onClick={() => setView('dashboard')} style={{ background: 'transparent', border: 'none', cursor: 'pointer' }}><X size={20}/></button>
+                    <h2 style={{ margin: 0, fontSize: '16px', fontWeight: 'bold', color: '#0f172a' }}>{isEditing ? 'Edit Entry' : 'New Entry'}</h2>
+                    <button onClick={() => setView('dashboard')} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: '#64748b' }}><X size={20}/></button>
                   </div>
                   
                   <form onSubmit={handleSave} style={{ padding: '24px' }}>
