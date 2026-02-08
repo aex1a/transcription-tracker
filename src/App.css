@@ -40,3 +40,50 @@
 .read-the-docs {
   color: #888;
 }
+/* --- Mobile Responsive Fixes --- */
+
+/* Tablet & Mobile: Stack the layout vertically */
+@media screen and (max-width: 900px) {
+  .dashboard-container {
+    flex-direction: column; /* Stacks sidebar/nav on top of content */
+    padding: 10px;
+  }
+
+  .billing-card, .project-card {
+    width: 100%; /* Force cards to take full width */
+    margin-bottom: 20px;
+  }
+}
+
+/* Mobile Navigation Bar adjustments */
+@media screen and (max-width: 650px) {
+  .navbar {
+    flex-wrap: wrap; /* Allows items to wrap if they run out of space */
+    justify-content: center;
+    padding: 10px 5px;
+  }
+
+  /* Hide non-essential elements on small screens to save space */
+  .navbar .social-icons,
+  .navbar .user-greeting {
+    display: none; 
+  }
+
+  .navbar-title {
+    font-size: 1.2rem; /* Reduce font size */
+    text-align: center;
+    width: 100%;
+  }
+}
+
+/* Ultra-small screens (e.g., iPhone SE, Galaxy Fold) */
+@media screen and (max-width: 380px) {
+  .date-input {
+    width: 100%; /* Make the new date picker easy to tap */
+    font-size: 16px; /* Prevents auto-zoom on iOS inputs */
+  }
+
+  h3 {
+    font-size: 1.1rem;
+  }
+}
