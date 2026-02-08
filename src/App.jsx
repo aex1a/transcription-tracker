@@ -250,8 +250,16 @@ export default function App() {
     th: { backgroundColor: '#f8fafc', color: '#475569', padding: '12px 16px', textAlign: 'left', fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', borderBottom: '1px solid #e2e8f0' },
     thClickable: { cursor: 'pointer', userSelect: 'none', display:'flex', alignItems:'center', gap:'6px' },
     td: { padding: '14px 16px', borderBottom: '1px solid #f1f5f9', fontSize: '14px', color: '#334155' },
-    // Scrollable Cell Style
-    tdScrollable: { padding: '14px 16px', borderBottom: '1px solid #f1f5f9', fontSize: '14px', color: '#334155', fontWeight: '600', maxWidth: '200px', whiteSpace: 'nowrap', overflowX: 'auto', overflowY: 'hidden' },
+    
+    // NEW SCROLLABLE CELL WRAPPER
+    scrollableWrapper: { 
+      maxWidth: '220px', 
+      whiteSpace: 'nowrap', 
+      overflowX: 'auto', 
+      overflowY: 'hidden', 
+      display: 'block' 
+    },
+
     radioLabel: { display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', cursor: 'pointer', padding: '10px', borderRadius: '8px', border: '1px solid #e2e8f0', backgroundColor: '#f8fafc' },
     radioActive: { backgroundColor: '#e0e7ff', borderColor: '#6366f1', color: '#4338ca', fontWeight: '600' },
     primaryBtn: { backgroundColor: '#4f46e5', color: 'white', padding: '8px 16px', borderRadius: '8px', border: 'none', fontWeight: '600', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px' }
@@ -451,8 +459,13 @@ export default function App() {
                       {sortedJobs.length > 0 ? sortedJobs.map(job => (
                         <tr key={job.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
                           <td style={styles.td}>{formatDate(job.date)}</td>
-                          {/* SCROLLABLE CELL FOR FILE NAME */}
-                          <td style={styles.tdScrollable} className="no-scrollbar">{job.file_name}</td>
+                          
+                          {/* FIXED SCROLLABLE CELL */}
+                          <td style={styles.td}>
+                            <div style={styles.scrollableWrapper} className="no-scrollbar">
+                              {job.file_name}
+                            </div>
+                          </td>
                           
                           <td style={styles.td}>{job.client||'-'}</td>
                           <td style={{...styles.td, fontFamily: 'monospace', color:'#6366f1'}}>{formatDuration(job.total_seconds)}</td>
