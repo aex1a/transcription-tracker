@@ -1,11 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from './supabase'; 
 import { Analytics } from "@vercel/analytics/react"; 
 import { 
   LayoutDashboard, Plus, List, 
   Trash2, Edit2, ExternalLink, Search, 
   CheckCircle2, Clock, AlertCircle, Loader2, X, CalendarDays, Settings,
-  ArrowUpDown, ArrowUp, ArrowDown, Filter, RotateCcw
+  ArrowUpDown, ArrowUp, ArrowDown, Filter, RotateCcw, GripVertical
 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 
@@ -89,6 +89,10 @@ export default function App() {
 
   const [sortConfig, setSortConfig] = useState({ key: 'date', direction: 'desc' });
   
+  // RESIZING STATE
+  const [colWidth, setColWidth] = useState(250); // Default width 250px
+  const resizingRef = useRef(false);
+
   const [billingStartDay, setBillingStartDay] = useState(() => parseInt(localStorage.getItem('billingStart') || '13'));
   const [showBillingModal, setShowBillingModal] = useState(false);
   const [tempBillingDay, setTempBillingDay] = useState(billingStartDay);
@@ -104,6 +108,32 @@ export default function App() {
   // --- Data Fetching ---
   useEffect(() => { fetchJobs(); }, []);
   useEffect(() => { localStorage.setItem('billingStart', billingStartDay); }, [billingStartDay]);
+
+  // --- RESIZE LOGIC (Excel Style) ---
+  useEffect(() => {
+    const handleMouseMove = (e) => {
+      if (resizingRef.current) {
+        setColWidth((prevWidth) => Math.max(100, prevWidth + e.movementX)); // Min width 100px
+      }
+    };
+    const handleMouseUp = () => {
+      resizingRef.current = false;
+      document.body.style.cursor = 'default';
+    };
+
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, []);
+
+  const startResizing = (e) => {
+    e.preventDefault();
+    resizingRef.current = true;
+    document.body.style.cursor = 'col-resize';
+  };
 
   const fetchJobs = async () => {
     setLoading(true);
@@ -251,13 +281,20 @@ export default function App() {
     thClickable: { cursor: 'pointer', userSelect: 'none', display:'flex', alignItems:'center', gap:'6px' },
     td: { padding: '14px 16px', borderBottom: '1px solid #f1f5f9', fontSize: '14px', color: '#334155' },
     
-    // NEW SCROLLABLE CELL WRAPPER
-    scrollableWrapper: { 
-      maxWidth: '220px', 
+    // EXCEL STYLE RESIZABLE CELL
+    tdResizable: { 
+      padding: '14px 16px', 
+      borderBottom: '1px solid #f1f5f9', 
+      fontSize: '14px', 
+      color: '#334155', 
+      fontWeight: '600',
       whiteSpace: 'nowrap', 
-      overflowX: 'auto', 
-      overflowY: 'hidden', 
-      display: 'block' 
+      overflow: 'hidden', 
+      textOverflow: 'ellipsis',
+      // DYNAMIC WIDTH FROM STATE
+      width: `${colWidth}px`,
+      minWidth: `${colWidth}px`,
+      maxWidth: `${colWidth}px`
     },
 
     radioLabel: { display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', cursor: 'pointer', padding: '10px', borderRadius: '8px', border: '1px solid #e2e8f0', backgroundColor: '#f8fafc' },
@@ -267,12 +304,6 @@ export default function App() {
 
   return (
     <div style={styles.container}>
-      {/* GLOBAL STYLE TO HIDE SCROLLBAR BUT ALLOW SCROLLING */}
-      <style>{`
-        .no-scrollbar::-webkit-scrollbar { display: none; }
-        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-      `}</style>
-
       <aside style={styles.sidebar} className="hidden-on-mobile">
         <div style={{ padding: '24px', borderBottom: '1px solid #1e293b' }}>
           <h2 style={{ fontSize: '18px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -415,10 +446,10 @@ export default function App() {
                     </div>
                     
                     <div style={{display:'flex', gap:'8px', alignItems:'center'}}>
-                        {/* CLEAR FILTER BUTTON (Only visible if filters active) */}
+                        {/* CLEAR FILTER BUTTON */}
                         {hasActiveFilters && (
                           <button onClick={clearAllFilters} style={{display:'flex', alignItems:'center', gap:'4px', border:'none', background:'#fee2e2', color:'#ef4444', borderRadius:'8px', padding:'0 10px', height:'34px', cursor:'pointer', fontSize:'12px', fontWeight:'bold'}}>
-                            <RotateCcw size={12} /> Reset
+                            <RotateCcw size={12} /> Clear
                           </button>
                         )}
 
@@ -443,7 +474,13 @@ export default function App() {
                         <th style={styles.th} onClick={() => requestSort('date')}>
                           <div style={styles.thClickable}>Date <SortIcon column="date" /></div>
                         </th>
-                        <th style={styles.th}>File Name</th>
+                        
+                        {/* DRAGGABLE HEADER */}
+                        <th style={{...styles.th, width: `${colWidth}px`, position: 'relative'}}>
+                          File Name
+                          <div onMouseDown={startResizing} style={{position:'absolute', right:0, top:0, bottom:0, width:'5px', cursor:'col-resize', zIndex:10}} />
+                        </th>
+                        
                         <th style={styles.th} onClick={() => requestSort('client')}>
                           <div style={styles.thClickable}>Type <SortIcon column="client" /></div>
                         </th>
@@ -460,11 +497,9 @@ export default function App() {
                         <tr key={job.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
                           <td style={styles.td}>{formatDate(job.date)}</td>
                           
-                          {/* FIXED SCROLLABLE CELL */}
-                          <td style={styles.td}>
-                            <div style={styles.scrollableWrapper} className="no-scrollbar">
-                              {job.file_name}
-                            </div>
+                          {/* RESIZABLE CELL */}
+                          <td style={styles.tdResizable} title={job.file_name}>
+                            {job.file_name}
                           </td>
                           
                           <td style={styles.td}>{job.client||'-'}</td>
