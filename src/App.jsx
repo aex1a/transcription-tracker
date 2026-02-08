@@ -336,8 +336,6 @@ export default function App() {
     if (!finalName && !isEditing) {
         finalName = generateAutoName(jobs);
     } else if (!finalName && isEditing) {
-        // If editing and they cleared the name, keep the old name or generate new? 
-        // Safer to generate new to avoid empty string errors.
         finalName = generateAutoName(jobs); 
     }
 
@@ -597,7 +595,6 @@ export default function App() {
                         placeholder="e.g. Meeting_Audio_01 (Leave empty for Auto Name)" 
                         value={formData.file_name} 
                         onChange={e => setFormData({...formData, file_name: e.target.value})} 
-                        /* REMOVED REQUIRED ATTRIBUTE */
                       />
                     </div>
                     <div style={{ marginBottom: '16px' }}>
@@ -668,7 +665,7 @@ export default function App() {
                     </thead>
                     <tbody>
                       {sortedJobs.length > 0 ? sortedJobs.map(job => (
-                        <tr key={job.id} style={{ borderBottom: '1px solid #f1f5f9', backgroundColor: job.file_name === 'Unnamed File' ? '#fee2e2' : 'white' }}>
+                        <tr key={job.id} style={{ borderBottom: '1px solid #f1f5f9', backgroundColor: job.file_name.startsWith('Unnamed File') ? '#fee2e2' : 'white' }}>
                           <td style={styles.td}>{formatDate(job.date)}</td>
                           <td style={{...styles.td, width: `${colWidth}px`, minWidth: `${colWidth}px`, maxWidth: `${colWidth}px`}}><div style={styles.tdWrapper} className="no-scrollbar" title={job.file_name}>{job.file_name}</div></td>
                           <td style={{...styles.td, display: isMobile ? 'none' : 'table-cell'}}>{job.client||'-'}</td>
