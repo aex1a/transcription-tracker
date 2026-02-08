@@ -90,7 +90,7 @@ export default function App() {
   const [sortConfig, setSortConfig] = useState({ key: 'date', direction: 'desc' });
   
   // RESIZING STATE
-  const [colWidth, setColWidth] = useState(250); // Default width 250px
+  const [colWidth, setColWidth] = useState(250); 
   const resizingRef = useRef(false);
 
   const [billingStartDay, setBillingStartDay] = useState(() => parseInt(localStorage.getItem('billingStart') || '13'));
@@ -113,7 +113,7 @@ export default function App() {
   useEffect(() => {
     const handleMouseMove = (e) => {
       if (resizingRef.current) {
-        setColWidth((prevWidth) => Math.max(100, prevWidth + e.movementX)); // Min width 100px
+        setColWidth((prevWidth) => Math.max(100, prevWidth + e.movementX)); 
       }
     };
     const handleMouseUp = () => {
@@ -281,20 +281,15 @@ export default function App() {
     thClickable: { cursor: 'pointer', userSelect: 'none', display:'flex', alignItems:'center', gap:'6px' },
     td: { padding: '14px 16px', borderBottom: '1px solid #f1f5f9', fontSize: '14px', color: '#334155' },
     
-    // EXCEL STYLE RESIZABLE CELL
-    tdResizable: { 
-      padding: '14px 16px', 
-      borderBottom: '1px solid #f1f5f9', 
-      fontSize: '14px', 
-      color: '#334155', 
-      fontWeight: '600',
+    // EXCEL STYLE RESIZABLE CELL WRAPPER
+    // Note: We use a Wrapper DIV inside the TD to ensure scrolling works
+    tdWrapper: {
+      width: '100%',
+      height: '100%',
       whiteSpace: 'nowrap', 
-      overflow: 'hidden', 
-      textOverflow: 'ellipsis',
-      // DYNAMIC WIDTH FROM STATE
-      width: `${colWidth}px`,
-      minWidth: `${colWidth}px`,
-      maxWidth: `${colWidth}px`
+      overflowX: 'auto', 
+      overflowY: 'hidden',
+      display: 'block'
     },
 
     radioLabel: { display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', cursor: 'pointer', padding: '10px', borderRadius: '8px', border: '1px solid #e2e8f0', backgroundColor: '#f8fafc' },
@@ -304,6 +299,12 @@ export default function App() {
 
   return (
     <div style={styles.container}>
+      {/* GLOBAL STYLE TO HIDE SCROLLBAR BUT ALLOW SCROLLING */}
+      <style>{`
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+      `}</style>
+
       <aside style={styles.sidebar} className="hidden-on-mobile">
         <div style={{ padding: '24px', borderBottom: '1px solid #1e293b' }}>
           <h2 style={{ fontSize: '18px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -477,8 +478,31 @@ export default function App() {
                         
                         {/* DRAGGABLE HEADER */}
                         <th style={{...styles.th, width: `${colWidth}px`, position: 'relative'}}>
-                          File Name
-                          <div onMouseDown={startResizing} style={{position:'absolute', right:0, top:0, bottom:0, width:'5px', cursor:'col-resize', zIndex:10}} />
+                          <div style={{display:'flex', justifyContent:'space-between', alignItems:'center'}}>
+                            File Name
+                            {/* Visual Grip Icon */}
+                            <GripVertical size={14} style={{color:'#94a3b8', marginRight:'4px'}} />
+                          </div>
+
+                          {/* The Actual Clickable Area */}
+                          <div
+                            onMouseDown={startResizing}
+                            style={{
+                              position: 'absolute',
+                              right: 0,
+                              top: 0,
+                              bottom: 0,
+                              width: '8px', 
+                              cursor: 'col-resize',
+                              zIndex: 10,
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                            }}
+                          >
+                            {/* The Visible Line */}
+                            <div style={{width:'2px', height:'100%', backgroundColor:'#0f172a', opacity: 0.3}} />
+                          </div>
                         </th>
                         
                         <th style={styles.th} onClick={() => requestSort('client')}>
@@ -497,9 +521,11 @@ export default function App() {
                         <tr key={job.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
                           <td style={styles.td}>{formatDate(job.date)}</td>
                           
-                          {/* RESIZABLE CELL */}
-                          <td style={styles.tdResizable} title={job.file_name}>
-                            {job.file_name}
+                          {/* DYNAMIC WIDTH CELL */}
+                          <td style={{...styles.td, width: `${colWidth}px`, minWidth: `${colWidth}px`, maxWidth: `${colWidth}px`}}>
+                            <div style={styles.tdWrapper} className="no-scrollbar" title={job.file_name}>
+                              {job.file_name}
+                            </div>
                           </td>
                           
                           <td style={styles.td}>{job.client||'-'}</td>
