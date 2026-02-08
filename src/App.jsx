@@ -63,41 +63,45 @@ const formatDate = (dateString) => {
 const themes = {
   light: {
     bg: '#ffffff',
-    text: '#000000',
+    text: '#0f172a',
+    mutedText: '#64748b',
     sidebarBg: '#000000',
     sidebarText: '#ffffff',
     cardBg: '#ffffff',
-    border: '#94A3B8', // Darker border for visibility
+    border: '#cbd5e1', // Darkened for visibility against white
     accent: '#5682B1',
     accentSec: '#739EC9',
-    tableHeaderBg: '#f1f5f9',
-    tableHeaderText: '#0F172A'
+    tableHeaderBg: '#f8fafc',
+    tableHeaderText: '#0f172a',
+    statCardShadow: '0 4px 6px -1px rgba(0,0,0,0.1)'
   },
   dark: {
-    bg: '#0f172a', // Deep dark blue/grey
-    text: '#f8fafc', // Off-white text
-    sidebarBg: '#020617', // Almost black
+    bg: '#171010', // Deepest background
+    text: '#e2e8f0', // Light grey text for readability
+    mutedText: '#94a3b8',
+    sidebarBg: '#171010', // Matches main BG
     sidebarText: '#94a3b8',
-    cardBg: '#1e293b', // Lighter dark for cards
-    border: '#334155', // Subtle dark border
-    accent: '#60a5fa', // Brighter blue for dark mode
-    accentSec: '#3b82f6',
-    tableHeaderBg: '#1e293b',
-    tableHeaderText: '#f1f5f9'
+    cardBg: '#2B2B2B', // Dark Grey for cards
+    border: '#423F3E', // Warm Grey for borders
+    accent: '#A27B5C', // Bronze/Brown accent for dark mode (high contrast)
+    accentSec: '#362222', // Dark Brown
+    tableHeaderBg: '#362222',
+    tableHeaderText: '#e2e8f0',
+    statCardShadow: '0 4px 6px -1px rgba(0,0,0,0.5)'
   }
 };
 
 // --- Components ---
 
-const BillingCard = ({ label, count, hours, onEdit, onExport, darkMode }) => (
+const BillingCard = ({ label, count, hours, onEdit, onExport, theme, darkMode }) => (
   <div className="billing-card" style={{ 
-    background: darkMode ? 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)' : 'linear-gradient(135deg, #000000 0%, #5682B1 100%)', 
+    background: darkMode ? 'linear-gradient(135deg, #362222 0%, #2B2B2B 100%)' : 'linear-gradient(135deg, #000000 0%, #5682B1 100%)', 
     borderRadius: '16px', 
     padding: '24px', 
     color: '#ffffff', 
-    boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.3)', 
+    boxShadow: theme.statCardShadow, 
     position: 'relative', 
-    border: darkMode ? '1px solid #334155' : '1px solid #5682B1' 
+    border: `1px solid ${theme.border}` 
   }}>
     <div style={{ position: 'absolute', top: '20px', right: '20px', display: 'flex', gap: '8px' }}>
       <button onClick={onExport} style={{ background: 'rgba(255, 255, 255, 0.1)', border: 'none', borderRadius: '50%', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#ffffff' }} title="Export Excel">
@@ -118,23 +122,30 @@ const BillingCard = ({ label, count, hours, onEdit, onExport, darkMode }) => (
   </div>
 );
 
+// RESTORED: Original Layout structure with dynamic theme colors
 const StatCard = ({ title, value, icon: Icon, color, theme }) => (
   <div className="stat-card" style={{ 
     borderLeft: `4px solid ${color}`, 
-    backgroundColor: theme.cardBg,
+    backgroundColor: theme.cardBg, 
+    boxShadow: theme.statCardShadow,
     border: `1px solid ${theme.border}`,
-    borderLeftWidth: '4px' // Override to keep accent
+    borderLeftWidth: '4px' // Ensure left border is thicker
   }}>
-    <div className="stat-content"><p className="stat-title" style={{color: theme.text, opacity: 0.7}}>{title}</p><h3 className="stat-value" style={{color: theme.text}}>{value}</h3></div>
-    <div className="stat-icon" style={{ color: color, backgroundColor: `${color}15` }}><Icon size={24} /></div>
+    <div className="stat-content">
+      <p className="stat-title" style={{ color: theme.mutedText }}>{title}</p>
+      <h3 className="stat-value" style={{ color: theme.text }}>{value}</h3>
+    </div>
+    <div className="stat-icon" style={{ color: color, backgroundColor: `${color}15` }}>
+      <Icon size={24} />
+    </div>
   </div>
 );
 
 const StatusBadge = ({ status, darkMode }) => {
   const c = { 
-    'Completed': {bg: darkMode ? '#064e3b' : '#5682B1', t: '#ffffff', b: darkMode ? '#059669' : '#5682B1'}, 
-    'In Progress': {bg: darkMode ? '#1e293b' : '#f0f9ff', t: darkMode ? '#60a5fa' : '#000000', b: darkMode ? '#3b82f6' : '#739EC9'}, 
-    'Pending QA': {bg: darkMode ? '#451a03' : '#739EC9', t: darkMode ? '#fbbf24' : '#000000', b: darkMode ? '#d97706' : '#5682B1'} 
+    'Completed': {bg: darkMode ? '#362222' : '#5682B1', t: '#ffffff', b: darkMode ? '#423F3E' : '#5682B1'}, 
+    'In Progress': {bg: darkMode ? '#2B2B2B' : '#f0f9ff', t: darkMode ? '#ffffff' : '#000000', b: darkMode ? '#423F3E' : '#739EC9'}, 
+    'Pending QA': {bg: darkMode ? '#423F3E' : '#739EC9', t: darkMode ? '#ffffff' : '#000000', b: darkMode ? '#362222' : '#5682B1'} 
   }[status] || {bg:'#f3f4f6', t:'#374151', b:'#e5e7eb'};
   
   return <span style={{ backgroundColor: c.bg, color: c.t, border: `1px solid ${c.b}`, padding: '4px 10px', borderRadius: '999px', fontSize: '11px', fontWeight: '700', textTransform: 'uppercase' }}>{status}</span>;
@@ -199,7 +210,6 @@ export default function App() {
     localStorage.setItem('billingEndDate', billingEndDate); 
   }, [billingStartDate, billingEndDate]);
 
-  // Persist Theme Preference
   useEffect(() => {
     localStorage.setItem('trackscribe_theme', darkMode ? 'dark' : 'light');
   }, [darkMode]);
@@ -475,11 +485,9 @@ export default function App() {
   const sortedJobs = [...filteredJobs].sort((a, b) => { if (sortConfig.key === 'date') { return sortConfig.direction === 'asc' ? new Date(a.date) - new Date(b.date) : new Date(b.date) - new Date(a.date); } if (sortConfig.key === 'client') { const valA = (a.client || '').toLowerCase(); const valB = (b.client || '').toLowerCase(); if (valA < valB) return sortConfig.direction === 'asc' ? -1 : 1; if (valA > valB) return sortConfig.direction === 'asc' ? 1 : -1; return 0; } if (sortConfig.key === 'status') { const statusOrder = { 'In Progress': 1, 'Pending QA': 2, 'Completed': 3 }; const valA = statusOrder[a.status] || 99; const valB = statusOrder[b.status] || 99; return sortConfig.direction === 'asc' ? valA - valB : valB - valA; } return 0; });
   const chartData = jobs.reduce((acc, job) => { const d = job.date; const f = acc.find(i => i.date === d); const m = Math.floor((job.total_seconds || 0) / 60); if (f) f.minutes += m; else acc.push({ date: d, minutes: m }); return acc; }, []).sort((a, b) => new Date(a.date) - new Date(b.date)).slice(-7);
 
-  // --- STYLES ---
   const styles = {
     container: { fontFamily: 'Inter, sans-serif', backgroundColor: currentTheme.bg, minHeight: '100vh', display: 'flex', flexDirection: 'column' },
     
-    // Sidebar: Dark Mode uses deep black, Light Mode uses black
     sidebar: { width: '250px', backgroundColor: currentTheme.sidebarBg, borderRight: `1px solid ${currentTheme.border}`, display: 'flex', flexDirection: 'column', position: 'fixed', height: '100%', zIndex: 50, transition: 'transform 0.3s ease', transform: isMobile && !showMobileMenu ? 'translateX(-100%)' : 'translateX(0)' },
     
     main: { flex: 1, marginLeft: isMobile ? '0' : '250px', padding: isMobile ? '1rem' : '2rem', overflowY: 'auto' },
@@ -506,7 +514,7 @@ export default function App() {
     pauseBtn: { backgroundColor: currentTheme.border, color: currentTheme.text },
     stopBtn: { backgroundColor: '#ef4444', color: 'white' },
     stageOption: { display: 'flex', flexDirection: 'column', padding: '15px', borderRadius: '8px', border: `2px solid ${currentTheme.border}`, flex: 1, textAlign:'center' },
-    stageActive: { borderColor: currentTheme.accent, backgroundColor: darkMode ? '#1e293b' : '#f0f9ff' },
+    stageActive: { borderColor: currentTheme.accent, backgroundColor: darkMode ? '#2B2B2B' : '#f0f9ff' },
     stageTitle: { fontWeight: 'bold', marginBottom: '4px', color: currentTheme.text },
     stageDesc: { fontSize: '12px', color: currentTheme.accent }
   };
@@ -519,6 +527,14 @@ export default function App() {
         .dashboard-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 30px; }
         .billing-stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
         .billing-separator { border-left: 1px solid rgba(255, 255, 255, 0.3); padding-left: 20px; }
+        
+        /* RESTORED STAT CARD STYLES */
+        .stat-card { padding: 20px; border-radius: 12px; display: flex; align-items: center; justify-content: space-between; transition: transform 0.2s; }
+        .stat-card:hover { transform: translateY(-2px); }
+        .stat-title { font-size: 11px; font-weight: 700; text-transform: uppercase; margin-bottom: 4px; letter-spacing: 0.5px; }
+        .stat-value { font-size: 24px; font-weight: 800; margin: 0; }
+        .stat-icon { width: 44px; height: 44px; border-radius: 10px; display: flex; align-items: center; justify-content: center; }
+
         @media (max-width: 768px) {
             .billing-stats-grid { grid-template-columns: 1fr; gap: 10px; }
             .billing-separator { border-left: none; padding-left: 0; padding-top: 10px; border-top: 1px solid rgba(255, 255, 255, 0.3); }
@@ -584,13 +600,14 @@ export default function App() {
                             setShowBillingModal(true); 
                         }} 
                         onExport={downloadBillingXLSX}
+                        theme={currentTheme}
                         darkMode={darkMode}
                     />
                 </div>
                 
                 <div className="dashboard-grid">
                     <StatCard title="Total Lifetime Files" value={jobs.filter(j => j.status === 'Completed').length} icon={CheckCircle2} color={currentTheme.accent} theme={currentTheme} />
-                    <StatCard title="Pending Review" value={jobs.filter(j => j.status === 'Pending QA').length} icon={AlertCircle} color={darkMode ? '#fbbf24' : '#f59e0b'} theme={currentTheme} />
+                    <StatCard title="Pending Review" value={jobs.filter(j => j.status === 'Pending QA').length} icon={AlertCircle} color={darkMode ? '#A27B5C' : '#f59e0b'} theme={currentTheme} />
                 </div>
 
                 <div style={{ background: currentTheme.cardBg, padding: '24px', borderRadius: '16px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)', border: `1px solid ${currentTheme.border}` }}><h3 style={{ fontWeight: 'bold', marginBottom: '20px', fontSize: '14px', textTransform:'uppercase', color: currentTheme.accent }}>Weekly Output (Minutes)</h3><div style={{ height: '250px' }}><ResponsiveContainer width="100%" height="100%"><BarChart data={chartData}><CartesianGrid strokeDasharray="3 3" vertical={false} stroke={currentTheme.border} /><XAxis dataKey="date" axisLine={false} tickLine={false} tickFormatter={(str) => new Date(str).toLocaleDateString(undefined, {weekday: 'short'})} /><YAxis axisLine={false} tickLine={false} /><Tooltip cursor={{fill: 'transparent'}} /><Bar dataKey="minutes" fill={currentTheme.text} radius={[4, 4, 4, 4]} barSize={32} /></BarChart></ResponsiveContainer></div></div>
