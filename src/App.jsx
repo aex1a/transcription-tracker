@@ -67,8 +67,9 @@ const themes = {
     mutedText: '#64748b',
     sidebarBg: '#000000',
     sidebarText: '#ffffff',
+    sidebarActiveBg: '#334155',
     cardBg: '#ffffff',
-    border: '#cbd5e1', // Darkened for visibility against white
+    border: '#cbd5e1', 
     accent: '#5682B1',
     accentSec: '#739EC9',
     tableHeaderBg: '#f8fafc',
@@ -76,17 +77,18 @@ const themes = {
     statCardShadow: '0 4px 6px -1px rgba(0,0,0,0.1)'
   },
   dark: {
-    bg: '#171010', // Deepest background
-    text: '#e2e8f0', // Light grey text for readability
-    mutedText: '#94a3b8',
-    sidebarBg: '#171010', // Matches main BG
-    sidebarText: '#94a3b8',
-    cardBg: '#2B2B2B', // Dark Grey for cards
-    border: '#423F3E', // Warm Grey for borders
-    accent: '#A27B5C', // Bronze/Brown accent for dark mode (high contrast)
-    accentSec: '#362222', // Dark Brown
-    tableHeaderBg: '#362222',
-    tableHeaderText: '#e2e8f0',
+    bg: '#010038',       // Deep Midnight Blue
+    text: '#ffffff',     // White text for contrast
+    mutedText: '#537EC5',// Light Blue for secondary text
+    sidebarBg: '#010038',
+    sidebarText: '#537EC5',
+    sidebarActiveBg: '#293A80',
+    cardBg: '#050529',   // Slightly lighter than BG to separate cards visually
+    border: '#293A80',   // Medium Blue borders
+    accent: '#F39422',   // Orange Accent
+    accentSec: '#537EC5',// Light Blue Accent
+    tableHeaderBg: '#293A80',
+    tableHeaderText: '#ffffff',
     statCardShadow: '0 4px 6px -1px rgba(0,0,0,0.5)'
   }
 };
@@ -95,13 +97,14 @@ const themes = {
 
 const BillingCard = ({ label, count, hours, onEdit, onExport, theme, darkMode }) => (
   <div className="billing-card" style={{ 
-    background: darkMode ? 'linear-gradient(135deg, #362222 0%, #2B2B2B 100%)' : 'linear-gradient(135deg, #000000 0%, #5682B1 100%)', 
+    // Gradient: Deep Blue -> Medium Blue (Dark) OR Black -> Steel Blue (Light)
+    background: darkMode ? 'linear-gradient(135deg, #010038 0%, #293A80 100%)' : 'linear-gradient(135deg, #000000 0%, #5682B1 100%)', 
     borderRadius: '16px', 
     padding: '24px', 
     color: '#ffffff', 
     boxShadow: theme.statCardShadow, 
     position: 'relative', 
-    border: `1px solid ${theme.border}` 
+    border: `1px solid ${darkMode ? '#537EC5' : '#5682B1'}` 
   }}>
     <div style={{ position: 'absolute', top: '20px', right: '20px', display: 'flex', gap: '8px' }}>
       <button onClick={onExport} style={{ background: 'rgba(255, 255, 255, 0.1)', border: 'none', borderRadius: '50%', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#ffffff' }} title="Export Excel">
@@ -112,24 +115,24 @@ const BillingCard = ({ label, count, hours, onEdit, onExport, theme, darkMode })
       </button>
     </div>
     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '16px' }}>
-      <div><p style={{ fontSize: '13px', fontWeight: '600', opacity: 0.8, textTransform: 'uppercase', letterSpacing: '0.5px', color: darkMode ? '#94a3b8' : '#739EC9' }}>Current Billing Cycle</p><p style={{ fontSize: '14px', fontWeight: 'bold', marginTop: '4px', color: '#ffffff' }}>{label}</p></div>
-      <CalendarDays size={24} style={{ opacity: 0.8, color: darkMode ? '#94a3b8' : '#739EC9', marginRight: '80px' }} />
+      <div><p style={{ fontSize: '13px', fontWeight: '600', opacity: 0.8, textTransform: 'uppercase', letterSpacing: '0.5px', color: darkMode ? '#F39422' : '#739EC9' }}>Current Billing Cycle</p><p style={{ fontSize: '14px', fontWeight: 'bold', marginTop: '4px', color: '#ffffff' }}>{label}</p></div>
+      <CalendarDays size={24} style={{ opacity: 0.8, color: darkMode ? '#F39422' : '#739EC9', marginRight: '80px' }} />
     </div>
     <div className="billing-stats-grid">
-      <div><h3 style={{ fontSize: '32px', fontWeight: '800', lineHeight: '1' }}>{count}</h3><p style={{ fontSize: '13px', opacity: 0.8, marginTop: '4px', color: darkMode ? '#94a3b8' : '#739EC9' }}>Files Completed</p></div>
-      <div className="billing-separator"><h3 style={{ fontSize: '32px', fontWeight: '800', lineHeight: '1' }}>{hours}</h3><p style={{ fontSize: '13px', opacity: 0.8, marginTop: '4px', color: darkMode ? '#94a3b8' : '#739EC9' }}>Audio Hours</p></div>
+      <div><h3 style={{ fontSize: '32px', fontWeight: '800', lineHeight: '1' }}>{count}</h3><p style={{ fontSize: '13px', opacity: 0.8, marginTop: '4px', color: darkMode ? '#537EC5' : '#739EC9' }}>Files Completed</p></div>
+      <div className="billing-separator"><h3 style={{ fontSize: '32px', fontWeight: '800', lineHeight: '1' }}>{hours}</h3><p style={{ fontSize: '13px', opacity: 0.8, marginTop: '4px', color: darkMode ? '#537EC5' : '#739EC9' }}>Audio Hours</p></div>
     </div>
   </div>
 );
 
-// RESTORED: Original Layout structure with dynamic theme colors
+// RESTORED: Original Layout structure
 const StatCard = ({ title, value, icon: Icon, color, theme }) => (
   <div className="stat-card" style={{ 
     borderLeft: `4px solid ${color}`, 
     backgroundColor: theme.cardBg, 
     boxShadow: theme.statCardShadow,
     border: `1px solid ${theme.border}`,
-    borderLeftWidth: '4px' // Ensure left border is thicker
+    borderLeftWidth: '4px' 
   }}>
     <div className="stat-content">
       <p className="stat-title" style={{ color: theme.mutedText }}>{title}</p>
@@ -142,10 +145,24 @@ const StatCard = ({ title, value, icon: Icon, color, theme }) => (
 );
 
 const StatusBadge = ({ status, darkMode }) => {
+  // Light Mode: Defaults
+  // Dark Mode: Uses new Palette (#F39422 Orange, #537EC5 Blue)
   const c = { 
-    'Completed': {bg: darkMode ? '#362222' : '#5682B1', t: '#ffffff', b: darkMode ? '#423F3E' : '#5682B1'}, 
-    'In Progress': {bg: darkMode ? '#2B2B2B' : '#f0f9ff', t: darkMode ? '#ffffff' : '#000000', b: darkMode ? '#423F3E' : '#739EC9'}, 
-    'Pending QA': {bg: darkMode ? '#423F3E' : '#739EC9', t: darkMode ? '#ffffff' : '#000000', b: darkMode ? '#362222' : '#5682B1'} 
+    'Completed': {
+        bg: darkMode ? 'rgba(83, 126, 197, 0.2)' : '#5682B1', 
+        t: darkMode ? '#537EC5' : '#ffffff', 
+        b: darkMode ? '#537EC5' : '#5682B1'
+    }, 
+    'In Progress': {
+        bg: darkMode ? 'rgba(243, 148, 34, 0.1)' : '#f0f9ff', 
+        t: darkMode ? '#F39422' : '#000000', 
+        b: darkMode ? '#F39422' : '#739EC9'
+    }, 
+    'Pending QA': {
+        bg: darkMode ? 'rgba(41, 58, 128, 0.3)' : '#739EC9', 
+        t: darkMode ? '#ffffff' : '#000000', 
+        b: darkMode ? '#293A80' : '#5682B1'
+    } 
   }[status] || {bg:'#f3f4f6', t:'#374151', b:'#e5e7eb'};
   
   return <span style={{ backgroundColor: c.bg, color: c.t, border: `1px solid ${c.b}`, padding: '4px 10px', borderRadius: '999px', fontSize: '11px', fontWeight: '700', textTransform: 'uppercase' }}>{status}</span>;
@@ -493,7 +510,7 @@ export default function App() {
     main: { flex: 1, marginLeft: isMobile ? '0' : '250px', padding: isMobile ? '1rem' : '2rem', overflowY: 'auto' },
     
     navBtn: { display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 20px', width: '100%', background: 'transparent', border: 'none', color: currentTheme.sidebarText, cursor: 'pointer', fontSize: '14px', fontWeight: '500', transition: 'all 0.2s', margin: '4px 0', borderRadius: '0 20px 20px 0', opacity: 0.7 },
-    navBtnActive: { backgroundColor: currentTheme.accent, color: '#ffffff', fontWeight: '700', opacity: 1 },
+    navBtnActive: { backgroundColor: currentTheme.sidebarActiveBg, color: '#ffffff', fontWeight: '700', opacity: 1, borderRight: `3px solid ${currentTheme.accent}` },
     
     input: { width: '100%', padding: '10px 14px', borderRadius: '8px', border: `1px solid ${currentTheme.border}`, fontSize: '14px', outline: 'none', backgroundColor: currentTheme.cardBg, boxSizing:'border-box', color: currentTheme.text },
     label: { display: 'block', marginBottom: '6px', fontSize: '14px', fontWeight: '600', color: currentTheme.text },
@@ -514,9 +531,9 @@ export default function App() {
     pauseBtn: { backgroundColor: currentTheme.border, color: currentTheme.text },
     stopBtn: { backgroundColor: '#ef4444', color: 'white' },
     stageOption: { display: 'flex', flexDirection: 'column', padding: '15px', borderRadius: '8px', border: `2px solid ${currentTheme.border}`, flex: 1, textAlign:'center' },
-    stageActive: { borderColor: currentTheme.accent, backgroundColor: darkMode ? '#2B2B2B' : '#f0f9ff' },
+    stageActive: { borderColor: currentTheme.accent, backgroundColor: darkMode ? '#293A80' : '#f0f9ff' },
     stageTitle: { fontWeight: 'bold', marginBottom: '4px', color: currentTheme.text },
-    stageDesc: { fontSize: '12px', color: currentTheme.accent }
+    stageDesc: { fontSize: '12px', color: currentTheme.accentSec }
   };
 
   return (
@@ -558,13 +575,13 @@ export default function App() {
       <aside style={styles.sidebar}>
         <div style={{ padding: '24px', borderBottom: `1px solid ${currentTheme.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <h2 style={{ fontSize: '18px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '10px', margin: 0 }}>
-            <div style={{ background: '#ffffff', width: '28px', height: '28px', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#000000', fontWeight: '900' }}>T</div>
-            <span style={{color: '#ffffff'}}>TrackScribe</span>
+            <div style={{ background: currentTheme.text, width: '28px', height: '28px', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: currentTheme.bg, fontWeight: '900' }}>T</div>
+            <span style={{color: currentTheme.sidebarText}}>TrackScribe</span>
           </h2>
-          <button onClick={() => setDarkMode(!darkMode)} style={{background:'transparent', border:'none', cursor:'pointer', color:'#ffffff'}}>
+          <button onClick={() => setDarkMode(!darkMode)} style={{background:'transparent', border:'none', cursor:'pointer', color: currentTheme.sidebarText}}>
             {darkMode ? <Sun size={20}/> : <Moon size={20}/>}
           </button>
-          {isMobile && <button onClick={() => setShowMobileMenu(false)} style={{background:'none', border:'none', color:'#ffffff'}}><X size={20}/></button>}
+          {isMobile && <button onClick={() => setShowMobileMenu(false)} style={{background:'none', border:'none', color: currentTheme.sidebarText}}><X size={20}/></button>}
         </div>
         <nav style={{ padding: '20px 0', flex: 1, paddingRight: '12px' }}>
           <button onClick={() => { setView('dashboard'); setShowMobileMenu(false); }} style={{ ...styles.navBtn, ...(view === 'dashboard' ? styles.navBtnActive : {}) }}><LayoutDashboard size={18} /> Overview</button>
@@ -606,8 +623,8 @@ export default function App() {
                 </div>
                 
                 <div className="dashboard-grid">
-                    <StatCard title="Total Lifetime Files" value={jobs.filter(j => j.status === 'Completed').length} icon={CheckCircle2} color={currentTheme.accent} theme={currentTheme} />
-                    <StatCard title="Pending Review" value={jobs.filter(j => j.status === 'Pending QA').length} icon={AlertCircle} color={darkMode ? '#A27B5C' : '#f59e0b'} theme={currentTheme} />
+                    <StatCard title="Total Lifetime Files" value={jobs.filter(j => j.status === 'Completed').length} icon={CheckCircle2} color={darkMode ? '#F39422' : '#5682B1'} theme={currentTheme} />
+                    <StatCard title="Pending Review" value={jobs.filter(j => j.status === 'Pending QA').length} icon={AlertCircle} color={darkMode ? '#537EC5' : '#739EC9'} theme={currentTheme} />
                 </div>
 
                 <div style={{ background: currentTheme.cardBg, padding: '24px', borderRadius: '16px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)', border: `1px solid ${currentTheme.border}` }}><h3 style={{ fontWeight: 'bold', marginBottom: '20px', fontSize: '14px', textTransform:'uppercase', color: currentTheme.accent }}>Weekly Output (Minutes)</h3><div style={{ height: '250px' }}><ResponsiveContainer width="100%" height="100%"><BarChart data={chartData}><CartesianGrid strokeDasharray="3 3" vertical={false} stroke={currentTheme.border} /><XAxis dataKey="date" axisLine={false} tickLine={false} tickFormatter={(str) => new Date(str).toLocaleDateString(undefined, {weekday: 'short'})} /><YAxis axisLine={false} tickLine={false} /><Tooltip cursor={{fill: 'transparent'}} /><Bar dataKey="minutes" fill={currentTheme.text} radius={[4, 4, 4, 4]} barSize={32} /></BarChart></ResponsiveContainer></div></div>
