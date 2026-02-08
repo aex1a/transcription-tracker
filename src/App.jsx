@@ -26,7 +26,6 @@ const formatDecimalHours = (totalSeconds) => {
   return hours.toFixed(3); 
 };
 
-// Formats seconds into "1h 30m 5s"
 const formatDuration = (totalSeconds) => {
   if (!totalSeconds) return '0s';
   const h = Math.floor(totalSeconds / 3600);
@@ -86,7 +85,7 @@ export default function App() {
   // FILTERS
   const [searchTerm, setSearchTerm] = useState('');
   const [filterDate, setFilterDate] = useState('');
-  const [filterType, setFilterType] = useState('All'); // All, Mantis, Cricket
+  const [filterType, setFilterType] = useState('All'); 
 
   const [sortConfig, setSortConfig] = useState({ key: 'date', direction: 'desc' });
   
@@ -100,6 +99,7 @@ export default function App() {
     link: '', notes: '', status: 'In Progress' 
   });
   const [isEditing, setIsEditing] = useState(null);
+  const [showEntryModal, setShowEntryModal] = useState(false); 
 
   // --- Data Fetching ---
   useEffect(() => { fetchJobs(); }, []);
@@ -127,7 +127,7 @@ export default function App() {
 
     const totalSeconds = (h * 3600) + (m * 60) + s;
     const payload = { 
-      file_name: formData.file_name, client: formData.client, // 'client' now stores Mantis/Cricket
+      file_name: formData.file_name, client: formData.client, 
       hours: h, minutes: m, seconds: s, date: formData.date, 
       link: formData.link, notes: formData.notes, status: formData.status, 
       total_seconds: totalSeconds, total_minutes: Math.floor(totalSeconds / 60),
@@ -140,7 +140,7 @@ export default function App() {
     await fetchJobs();
     setFormData({ file_name: '', client: 'Mantis', timeString: '', date: new Date().toISOString().split('T')[0], link: '', notes: '', status: 'In Progress' });
     setIsEditing(null);
-    setView('list');
+    setShowEntryModal(false);
   };
 
   const handleDelete = async (id) => {
@@ -155,7 +155,13 @@ export default function App() {
     let timeStr = job.hours > 0 ? `${pad(job.hours)}:${pad(job.minutes)}:${pad(job.seconds||0)}` : `${pad(job.minutes)}:${pad(job.seconds||0)}`;
     setFormData({ ...job, timeString: timeStr });
     setIsEditing(job.id);
-    setView('add');
+    setShowEntryModal(true);
+  };
+
+  const openNewEntry = () => {
+    setIsEditing(null);
+    setFormData({ file_name: '', client: 'Mantis', timeString: '', date: new Date().toISOString().split('T')[0], link: '', notes: '', status: 'In Progress' });
+    setShowEntryModal(true);
   };
 
   const handleTimeChange = (e) => setFormData({...formData, timeString: e.target.value.replace(/[^0-9:]/g, '')});
@@ -187,16 +193,10 @@ export default function App() {
   const cycleJobs = jobs.filter(j => { const d = new Date(j.date); return d >= cycle.start && d <= cycle.end && j.status === 'Completed'; });
   const cycleSecs = cycleJobs.reduce((acc, curr) => acc + (curr.total_seconds || 0), 0);
 
-  // --- MASTER FILTER LOGIC ---
   const filteredJobs = jobs.filter(j => {
     const matchesSearch = j.file_name.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    // Date Filter (If date is selected, must match exactly)
     const matchesDate = filterDate ? j.date === filterDate : true;
-    
-    // Type Filter (If not 'All', must match Mantis or Cricket)
     const matchesType = filterType === 'All' ? true : (j.client === filterType);
-
     return matchesSearch && matchesDate && matchesType;
   });
 
@@ -212,6 +212,12 @@ export default function App() {
       if (valA < valB) return sortConfig.direction === 'asc' ? -1 : 1;
       if (valA > valB) return sortConfig.direction === 'asc' ? 1 : -1;
       return 0;
+    }
+    if (sortConfig.key === 'status') {
+      const statusOrder = { 'In Progress': 1, 'Pending QA': 2, 'Completed': 3 };
+      const valA = statusOrder[a.status] || 99;
+      const valB = statusOrder[b.status] || 99;
+      return sortConfig.direction === 'asc' ? valA - valB : valB - valA;
     }
     return 0;
   });
@@ -236,7 +242,8 @@ export default function App() {
     thClickable: { cursor: 'pointer', userSelect: 'none', display:'flex', alignItems:'center', gap:'6px' },
     td: { padding: '14px 16px', borderBottom: '1px solid #f1f5f9', fontSize: '14px', color: '#334155' },
     radioLabel: { display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', cursor: 'pointer', padding: '10px', borderRadius: '8px', border: '1px solid #e2e8f0', backgroundColor: '#f8fafc' },
-    radioActive: { backgroundColor: '#e0e7ff', borderColor: '#6366f1', color: '#4338ca', fontWeight: '600' }
+    radioActive: { backgroundColor: '#e0e7ff', borderColor: '#6366f1', color: '#4338ca', fontWeight: '600' },
+    primaryBtn: { backgroundColor: '#4f46e5', color: 'white', padding: '8px 16px', borderRadius: '8px', border: 'none', fontWeight: '600', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px' }
   };
 
   return (
@@ -249,25 +256,30 @@ export default function App() {
           </h2>
         </div>
         <nav style={{ padding: '20px 0', flex: 1 }}>
-          {[{ id: 'dashboard', icon: LayoutDashboard, label: 'Overview' }, { id: 'add', icon: Plus, label: 'New Entry' }, { id: 'list', icon: List, label: 'All Files' }].map((item) => (
-            <button key={item.id} onClick={() => { setView(item.id); if(item.id === 'add') setIsEditing(null); }} style={{ ...styles.navBtn, ...(view === item.id ? styles.navBtnActive : {}) }}>
-              <item.icon size={18} /> {item.label}
-            </button>
-          ))}
+          <button onClick={() => setView('dashboard')} style={{ ...styles.navBtn, ...(view === 'dashboard' ? styles.navBtnActive : {}) }}>
+            <LayoutDashboard size={18} /> Overview
+          </button>
+          <button onClick={() => setView('list')} style={{ ...styles.navBtn, ...(view === 'list' ? styles.navBtnActive : {}) }}>
+            <List size={18} /> All Files
+          </button>
         </nav>
       </aside>
 
       <main style={{ ...styles.main, marginLeft: window.innerWidth < 768 ? '0' : '250px' }}>
         <div style={{ display: window.innerWidth < 768 ? 'flex' : 'none', justifyContent: 'space-between', marginBottom: '20px', alignItems: 'center' }}>
            <h2 style={{ fontWeight: 'bold', fontSize: '1.2rem', color: '#1e1b4b' }}>TrackScribe</h2>
-           <button onClick={() => setView('add')} style={{backgroundColor:'#6366f1', color:'white', border:'none', padding:'6px 12px', borderRadius:'6px'}}>+ Add</button>
+           <button onClick={openNewEntry} style={{backgroundColor:'#6366f1', color:'white', border:'none', padding:'6px 12px', borderRadius:'6px'}}>+ Add</button>
         </div>
 
         {loading ? <div style={{display:'flex', justifyContent:'center', marginTop:'50px'}}><Loader2 className="animate-spin text-indigo-500" /></div> : (
           <>
             {view === 'dashboard' && (
               <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
-                <h2 style={{ fontSize: '24px', fontWeight: 'bold', marginBottom: '24px', color: '#0f172a' }}>Dashboard</h2>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+                  <h2 style={{ fontSize: '24px', fontWeight: 'bold', color: '#0f172a', margin: 0 }}>Dashboard</h2>
+                  <button onClick={openNewEntry} style={styles.primaryBtn}><Plus size={16} /> Add New Entry</button>
+                </div>
+
                 <div style={{ marginBottom: '30px' }}>
                   <BillingCard label={cycle.label} count={cycleJobs.length} hours={formatDecimalHours(cycleSecs)} onEdit={() => { setTempBillingDay(billingStartDay); setShowBillingModal(true); }} />
                 </div>
@@ -282,12 +294,13 @@ export default function App() {
               </div>
             )}
 
-            {view === 'add' && (
+            {/* ENTRY MODAL (Visible when showEntryModal is true) */}
+            {showEntryModal && (
               <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(15, 23, 42, 0.7)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 }}>
                 <div style={{ backgroundColor: 'white', borderRadius: '16px', width: '100%', maxWidth: '480px', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)', overflow: 'hidden' }}>
                   <div style={{ padding: '16px 24px', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <h2 style={{ margin: 0, fontSize: '16px', fontWeight: 'bold', color: '#0f172a' }}>{isEditing ? 'Edit Entry' : 'New Entry'}</h2>
-                    <button onClick={() => setView('dashboard')} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: '#64748b' }}><X size={20}/></button>
+                    <button onClick={() => setShowEntryModal(false)} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: '#64748b' }}><X size={20}/></button>
                   </div>
                   
                   <form onSubmit={handleSave} style={{ padding: '24px' }}>
@@ -296,23 +309,16 @@ export default function App() {
                       <input required style={styles.input} placeholder="e.g. Meeting_Audio_01" value={formData.file_name} onChange={e => setFormData({...formData, file_name: e.target.value})} />
                     </div>
                     
-                    {/* NEW RADIO BUTTONS FOR FILE TYPE */}
                     <div style={{ marginBottom: '16px' }}>
                       <label style={styles.label}>File Type</label>
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-                        <div 
-                          onClick={() => setFormData({...formData, client: 'Mantis'})} 
-                          style={{...styles.radioLabel, ...(formData.client === 'Mantis' ? styles.radioActive : {})}}
-                        >
+                        <div onClick={() => setFormData({...formData, client: 'Mantis'})} style={{...styles.radioLabel, ...(formData.client === 'Mantis' ? styles.radioActive : {})}}>
                           <div style={{width:'16px', height:'16px', borderRadius:'50%', border:'2px solid', borderColor: formData.client === 'Mantis' ? '#6366f1' : '#cbd5e1', display:'flex', alignItems:'center', justifyContent:'center'}}>
                             {formData.client === 'Mantis' && <div style={{width:'8px', height:'8px', borderRadius:'50%', backgroundColor:'#6366f1'}} />}
                           </div>
                           Mantis
                         </div>
-                        <div 
-                          onClick={() => setFormData({...formData, client: 'Cricket'})} 
-                          style={{...styles.radioLabel, ...(formData.client === 'Cricket' ? styles.radioActive : {})}}
-                        >
+                        <div onClick={() => setFormData({...formData, client: 'Cricket'})} style={{...styles.radioLabel, ...(formData.client === 'Cricket' ? styles.radioActive : {})}}>
                           <div style={{width:'16px', height:'16px', borderRadius:'50%', border:'2px solid', borderColor: formData.client === 'Cricket' ? '#6366f1' : '#cbd5e1', display:'flex', alignItems:'center', justifyContent:'center'}}>
                             {formData.client === 'Cricket' && <div style={{width:'8px', height:'8px', borderRadius:'50%', backgroundColor:'#6366f1'}} />}
                           </div>
@@ -344,7 +350,7 @@ export default function App() {
                       </select>
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
-                      <button type="button" onClick={() => setView('dashboard')} style={{ padding: '10px 16px', border: 'none', background: 'transparent', color: '#64748b', fontWeight: '600', cursor: 'pointer' }}>Cancel</button>
+                      <button type="button" onClick={() => setShowEntryModal(false)} style={{ padding: '10px 16px', border: 'none', background: 'transparent', color: '#64748b', fontWeight: '600', cursor: 'pointer' }}>Cancel</button>
                       <button type="submit" style={{ padding: '10px 20px', border: 'none', background: '#4f46e5', color: 'white', borderRadius: '8px', fontWeight: '600', cursor: 'pointer', boxShadow: '0 4px 6px -1px rgba(79, 70, 229, 0.2)' }}>{loading ? 'Saving...' : 'Save Entry'}</button>
                     </div>
                   </form>
@@ -367,51 +373,32 @@ export default function App() {
             
             {view === 'list' && (
               <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
-                <div style={{ display: 'flex', flexWrap:'wrap', justifyContent: 'space-between', alignItems: 'end', marginBottom: '20px', gap:'10px' }}>
-                  
-                  {/* FILTERS SECTION */}
-                  <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-end', flexWrap: 'wrap' }}>
-                    <div>
-                      <h2 style={{ fontSize: '24px', fontWeight: 'bold', color: '#0f172a', margin: '0 0 10px 0' }}>File History</h2>
-                      <div style={{display:'flex', gap:'8px'}}>
-                        {/* Filter Type */}
-                        <div style={{position:'relative'}}>
-                          <select 
-                            value={filterType} 
-                            onChange={(e) => setFilterType(e.target.value)}
-                            style={{padding: '8px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px', outline: 'none', cursor:'pointer', appearance:'none', paddingRight:'30px', backgroundColor:'white'}}
-                          >
-                            <option value="All">All Types</option>
-                            <option value="Mantis">Mantis Only</option>
-                            <option value="Cricket">Cricket Only</option>
-                          </select>
-                          <Filter size={14} style={{position:'absolute', right:'10px', top:'10px', pointerEvents:'none', opacity:0.5}} />
-                        </div>
-
-                        {/* Filter Date */}
-                        <input 
-                          type="date" 
-                          value={filterDate} 
-                          onChange={(e) => setFilterDate(e.target.value)}
-                          style={{padding: '8px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px', outline: 'none', backgroundColor:'white'}}
-                        />
-                        {filterDate && (
-                          <button onClick={() => setFilterDate('')} style={{border:'none', background:'#fee2e2', color:'#ef4444', borderRadius:'6px', padding:'0 8px', cursor:'pointer', fontSize:'12px', fontWeight:'bold'}}>Clear Date</button>
-                        )}
-                      </div>
-                    </div>
+                {/* Header Row */}
+                <div style={{ display: 'flex', flexWrap:'wrap', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', gap:'10px' }}>
+                  <div style={{display:'flex', alignItems:'center', gap:'16px'}}>
+                    <h2 style={{ fontSize: '24px', fontWeight: 'bold', color: '#0f172a', margin: '0' }}>File History</h2>
+                    <button onClick={openNewEntry} style={styles.primaryBtn}><Plus size={16} /> Add New</button>
                   </div>
-
-                  {/* SEARCH + TOTAL HOURS */}
+                  
+                  {/* FILTERS + SEARCH + TOTAL HOURS */}
                   <div style={{ display: 'flex', flexDirection:'column', alignItems: 'flex-end', gap: '8px' }}>
                     <div style={{ background: '#e0e7ff', color: '#4338ca', padding: '8px 12px', borderRadius: '8px', fontWeight: '700', fontSize: '13px', border:'1px solid #c7d2fe', display:'flex', gap:'8px' }}>
                       <span>Total: {formatDecimalHours(listTotalSeconds)}</span>
                       <span style={{opacity:0.6}}>|</span>
                       <span>{formatDuration(listTotalSeconds)}</span>
                     </div>
-                    <div style={{position:'relative'}}>
-                      <Search size={16} style={{position:'absolute', left:'10px', top:'10px', opacity:0.4}} />
-                      <input style={{...styles.input, width: '250px', backgroundColor: 'white', paddingLeft:'32px'}} placeholder="Search filename..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+                    
+                    <div style={{display:'flex', gap:'8px'}}>
+                        <select value={filterType} onChange={(e) => setFilterType(e.target.value)} style={{padding: '8px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px', cursor:'pointer', backgroundColor:'white'}}>
+                            <option value="All">All Types</option>
+                            <option value="Mantis">Mantis</option>
+                            <option value="Cricket">Cricket</option>
+                        </select>
+                        <input type="date" value={filterDate} onChange={(e) => setFilterDate(e.target.value)} style={{padding: '8px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px', backgroundColor:'white'}} />
+                        <div style={{position:'relative'}}>
+                            <Search size={16} style={{position:'absolute', left:'10px', top:'10px', opacity:0.4}} />
+                            <input style={{...styles.input, width: '200px', backgroundColor: 'white', paddingLeft:'32px'}} placeholder="Search..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+                        </div>
                     </div>
                   </div>
                 </div>
@@ -428,7 +415,9 @@ export default function App() {
                           <div style={styles.thClickable}>Type <SortIcon column="client" /></div>
                         </th>
                         <th style={styles.th}>Duration</th>
-                        <th style={styles.th}>Status</th>
+                        <th style={styles.th} onClick={() => requestSort('status')}>
+                          <div style={styles.thClickable}>Status <SortIcon column="status" /></div>
+                        </th>
                         <th style={styles.th}>Link</th>
                         <th style={{...styles.th, textAlign: 'right'}}>EDIT/DELETE</th>
                       </tr>
@@ -437,7 +426,7 @@ export default function App() {
                       {sortedJobs.length > 0 ? sortedJobs.map(job => (
                         <tr key={job.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
                           <td style={styles.td}>{formatDate(job.date)}</td>
-                          <td style={{...styles.td, fontWeight: '600'}}>{job.file_name}</td>
+                          <td style={{...styles.td, fontWeight: '600', maxWidth: '220px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'}} title={job.file_name}>{job.file_name}</td>
                           <td style={styles.td}>{job.client||'-'}</td>
                           <td style={{...styles.td, fontFamily: 'monospace', color:'#6366f1'}}>{formatDuration(job.total_seconds)}</td>
                           <td style={styles.td}><StatusBadge status={job.status} /></td>
