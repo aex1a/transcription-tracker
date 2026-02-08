@@ -62,35 +62,36 @@ const formatDate = (dateString) => {
 // --- Color Themes ---
 const themes = {
   light: {
-    bg: '#ffffff',
-    text: '#191414',
-    mutedText: '#535353', // Softer grey for secondary text
-    sidebarBg: '#191414', // Spotify Black
-    sidebarText: '#b3b3b3', // Light Grey for inactive
-    sidebarActiveText: '#ffffff',
-    sidebarActiveBg: '#282828', // Slightly lighter black
-    cardBg: '#ffffff',
-    border: '#d1d5db', // Neutral grey border
-    accent: '#1db954', // Spotify Green
-    accentSec: '#191414', // Black
-    tableHeaderBg: '#f5f5f5',
-    tableHeaderText: '#191414',
-    statCardShadow: '0 4px 12px rgba(0,0,0,0.1)'
+    // User requested specific "Light" mode colors:
+    bg: '#191414',           // Main Background (Dark)
+    text: '#ffffff',         // Font (White)
+    mutedText: '#b3b3b3',
+    sidebarBg: '#1db954',    // Sidebar (Spotify Green)
+    sidebarText: '#ffffff',  // Sidebar Font (White)
+    sidebarActiveBg: '#169c46', 
+    cardBg: '#282828',       // Card background to separate from main BG
+    border: '#1db954',       // Green borders
+    accent: '#1db954',
+    accentSec: '#ffffff',
+    tableHeaderBg: '#1db954',
+    tableHeaderText: '#ffffff',
+    statCardShadow: '0 4px 6px -1px rgba(0,0,0,0.5)'
   },
   dark: {
-    bg: '#163300',       // Dark Green
-    text: '#ffffff',     // White fonts
-    mutedText: '#9fe870',// Lime for secondary text
-    sidebarBg: '#112600', // Deepest Green
+    // User requested Dark mode colors:
+    bg: '#001524',           // Deep Navy/Black
+    text: '#ffffff',         // Font (White)
+    mutedText: '#9ca3af',
+    sidebarBg: '#445D48',    // Muted Forest Green
     sidebarText: '#ffffff',
-    sidebarActiveBg: '#1e4002',
-    cardBg: '#1e4002',   // Lighter Green for cards
-    border: '#9fe870',   // Lime Green borders
-    accent: '#9fe870',   // Lime Green Accent
-    accentSec: '#ffffff',// White
-    tableHeaderBg: '#1e4002',
+    sidebarActiveBg: '#354a38',
+    cardBg: '#445D48',       // Cards match the secondary color
+    border: '#2a3c2e',       // Darker green border
+    accent: '#ffffff',       // White accents for contrast
+    accentSec: '#445D48',
+    tableHeaderBg: '#354a38',
     tableHeaderText: '#ffffff',
-    statCardShadow: '0 4px 12px rgba(0,0,0,0.3)'
+    statCardShadow: '0 4px 6px -1px rgba(0,0,0,0.5)'
   }
 };
 
@@ -98,30 +99,30 @@ const themes = {
 
 const BillingCard = ({ label, count, hours, onEdit, onExport, theme, darkMode }) => (
   <div className="billing-card" style={{ 
-    // Light: Black -> Green Gradient | Dark: Dark Green -> Lime Gradient
-    background: darkMode ? 'linear-gradient(135deg, #163300 0%, #3a5a00 100%)' : 'linear-gradient(135deg, #191414 0%, #1db954 100%)', 
+    // Light Mode: Black to Grey | Dark Mode: Navy to Green
+    background: darkMode ? 'linear-gradient(135deg, #001524 0%, #445D48 100%)' : 'linear-gradient(135deg, #191414 0%, #535353 100%)', 
     borderRadius: '16px', 
     padding: '24px', 
     color: '#ffffff', 
     boxShadow: theme.statCardShadow, 
     position: 'relative', 
-    border: `1px solid ${darkMode ? '#9fe870' : 'transparent'}` 
+    border: `1px solid ${theme.border}` 
   }}>
     <div style={{ position: 'absolute', top: '20px', right: '20px', display: 'flex', gap: '8px' }}>
-      <button onClick={onExport} style={{ background: 'rgba(255, 255, 255, 0.2)', border: 'none', borderRadius: '50%', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#ffffff' }} title="Export Excel">
+      <button onClick={onExport} style={{ background: 'rgba(255, 255, 255, 0.1)', border: 'none', borderRadius: '50%', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#ffffff' }} title="Export Excel">
         <Download size={16} />
       </button>
-      <button onClick={onEdit} style={{ background: 'rgba(255, 255, 255, 0.2)', border: 'none', borderRadius: '50%', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#ffffff' }} title="Edit Billing Cycle">
+      <button onClick={onEdit} style={{ background: 'rgba(255, 255, 255, 0.1)', border: 'none', borderRadius: '50%', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#ffffff' }} title="Edit Billing Cycle">
         <Settings size={16} />
       </button>
     </div>
     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '16px' }}>
-      <div><p style={{ fontSize: '13px', fontWeight: '600', opacity: 0.9, textTransform: 'uppercase', letterSpacing: '0.5px', color: '#ffffff' }}>Current Billing Cycle</p><p style={{ fontSize: '14px', fontWeight: 'bold', marginTop: '4px', color: '#ffffff' }}>{label}</p></div>
-      <CalendarDays size={24} style={{ opacity: 0.9, color: '#ffffff', marginRight: '80px' }} />
+      <div><p style={{ fontSize: '13px', fontWeight: '600', opacity: 0.8, textTransform: 'uppercase', letterSpacing: '0.5px', color: '#ffffff' }}>Current Billing Cycle</p><p style={{ fontSize: '14px', fontWeight: 'bold', marginTop: '4px', color: '#ffffff' }}>{label}</p></div>
+      <CalendarDays size={24} style={{ opacity: 0.8, color: '#ffffff', marginRight: '80px' }} />
     </div>
     <div className="billing-stats-grid">
-      <div><h3 style={{ fontSize: '32px', fontWeight: '800', lineHeight: '1' }}>{count}</h3><p style={{ fontSize: '13px', opacity: 0.9, marginTop: '4px', color: '#ffffff' }}>Files Completed</p></div>
-      <div className="billing-separator"><h3 style={{ fontSize: '32px', fontWeight: '800', lineHeight: '1' }}>{hours}</h3><p style={{ fontSize: '13px', opacity: 0.9, marginTop: '4px', color: '#ffffff' }}>Audio Hours</p></div>
+      <div><h3 style={{ fontSize: '32px', fontWeight: '800', lineHeight: '1' }}>{count}</h3><p style={{ fontSize: '13px', opacity: 0.8, marginTop: '4px', color: '#ffffff' }}>Files Completed</p></div>
+      <div className="billing-separator"><h3 style={{ fontSize: '32px', fontWeight: '800', lineHeight: '1' }}>{hours}</h3><p style={{ fontSize: '13px', opacity: 0.8, marginTop: '4px', color: '#ffffff' }}>Audio Hours</p></div>
     </div>
   </div>
 );
@@ -138,30 +139,28 @@ const StatCard = ({ title, value, icon: Icon, color, theme }) => (
       <p className="stat-title" style={{ color: theme.mutedText }}>{title}</p>
       <h3 className="stat-value" style={{ color: theme.text }}>{value}</h3>
     </div>
-    <div className="stat-icon" style={{ color: color, backgroundColor: `${color}15` }}>
+    <div className="stat-icon" style={{ color: color, backgroundColor: 'rgba(255,255,255,0.1)' }}>
       <Icon size={24} />
     </div>
   </div>
 );
 
 const StatusBadge = ({ status, darkMode }) => {
-  // Light: Green / White / Black
-  // Dark: Lime / Dark Green
   const c = { 
     'Completed': {
-        bg: darkMode ? 'rgba(159, 232, 112, 0.2)' : '#dcfce7', 
-        t: darkMode ? '#9fe870' : '#166534', 
-        b: darkMode ? '#9fe870' : '#1db954'
+        bg: darkMode ? '#001524' : '#1db954', 
+        t: '#ffffff', 
+        b: darkMode ? '#445D48' : '#1db954'
     }, 
     'In Progress': {
-        bg: darkMode ? 'rgba(255, 255, 255, 0.1)' : '#f3f4f6', 
-        t: darkMode ? '#ffffff' : '#191414', 
-        b: darkMode ? '#ffffff' : '#d1d5db'
+        bg: '#ffffff', 
+        t: '#000000', 
+        b: '#ffffff'
     }, 
     'Pending QA': {
-        bg: darkMode ? 'rgba(255, 255, 255, 0.05)' : '#fff7ed', 
-        t: darkMode ? '#9fe870' : '#c2410c', 
-        b: darkMode ? '#9fe870' : '#fdba74'
+        bg: darkMode ? '#2a3c2e' : '#282828', 
+        t: '#ffffff', 
+        b: darkMode ? '#445D48' : '#191414'
     } 
   }[status] || {bg:'#f3f4f6', t:'#374151', b:'#e5e7eb'};
   
@@ -173,6 +172,7 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState('dashboard');
   
+  // THEME STATE
   const [darkMode, setDarkMode] = useState(() => localStorage.getItem('trackscribe_theme') === 'dark');
   const currentTheme = darkMode ? themes.dark : themes.light;
 
@@ -504,13 +504,13 @@ export default function App() {
   const styles = {
     container: { fontFamily: 'Inter, sans-serif', backgroundColor: currentTheme.bg, minHeight: '100vh', display: 'flex', flexDirection: 'column' },
     
-    // Sidebar: Dark Mode uses deep green/black (#112600), Light Mode uses Spotify Black (#191414)
+    // Sidebar: Light Mode = #1db954 (Green) | Dark Mode = #445D48 (Forest)
     sidebar: { width: '250px', backgroundColor: currentTheme.sidebarBg, borderRight: `1px solid ${currentTheme.border}`, display: 'flex', flexDirection: 'column', position: 'fixed', height: '100%', zIndex: 50, transition: 'transform 0.3s ease', transform: isMobile && !showMobileMenu ? 'translateX(-100%)' : 'translateX(0)' },
     
     main: { flex: 1, marginLeft: isMobile ? '0' : '250px', padding: isMobile ? '1rem' : '2rem', overflowY: 'auto' },
     
     navBtn: { display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 20px', width: '100%', background: 'transparent', border: 'none', color: currentTheme.sidebarText, cursor: 'pointer', fontSize: '14px', fontWeight: '500', transition: 'all 0.2s', margin: '4px 0', borderRadius: '0 20px 20px 0', opacity: 0.8 },
-    navBtnActive: { backgroundColor: currentTheme.sidebarActiveBg, color: currentTheme.sidebarActiveText, fontWeight: '700', opacity: 1, borderLeft: `4px solid ${currentTheme.accent}` },
+    navBtnActive: { backgroundColor: currentTheme.sidebarActiveBg, color: '#ffffff', fontWeight: '700', opacity: 1, borderLeft: `4px solid #ffffff` },
     
     input: { width: '100%', padding: '10px 14px', borderRadius: '8px', border: `1px solid ${currentTheme.border}`, fontSize: '14px', outline: 'none', backgroundColor: currentTheme.cardBg, boxSizing:'border-box', color: currentTheme.text },
     label: { display: 'block', marginBottom: '6px', fontSize: '14px', fontWeight: '600', color: currentTheme.text },
@@ -565,8 +565,8 @@ export default function App() {
       {isMobile && (
         <div style={{ padding: '16px', background: currentTheme.sidebarBg, borderBottom: `1px solid ${currentTheme.border}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', zIndex: 60 }}>
             <div style={{display:'flex', alignItems:'center', gap:'12px'}}>
-                <button onClick={() => setShowMobileMenu(!showMobileMenu)} style={{border:'none', background:'none'}}><Menu size={24} color={currentTheme.text}/></button>
-                <span style={{fontWeight:'bold', color: currentTheme.text}}>TrackScribe</span>
+                <button onClick={() => setShowMobileMenu(!showMobileMenu)} style={{border:'none', background:'none'}}><Menu size={24} color={currentTheme.sidebarText}/></button>
+                <span style={{fontWeight:'bold', color: currentTheme.sidebarText}}>TrackScribe</span>
             </div>
             <button onClick={openNewEntry} style={{backgroundColor: currentTheme.accent, color: darkMode ? '#112600' : '#ffffff', border:'none', padding:'6px 12px', borderRadius:'6px', fontSize:'12px'}}>+ Add</button>
         </div>
@@ -575,13 +575,13 @@ export default function App() {
       <aside style={styles.sidebar}>
         <div style={{ padding: '24px', borderBottom: `1px solid ${currentTheme.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <h2 style={{ fontSize: '18px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '10px', margin: 0 }}>
-            <div style={{ background: currentTheme.accent, width: '28px', height: '28px', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: darkMode ? '#112600' : '#ffffff', fontWeight: '900' }}>T</div>
-            <span style={{color: '#ffffff'}}>TrackScribe</span>
+            <div style={{ background: currentTheme.sidebarText, width: '28px', height: '28px', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: currentTheme.sidebarBg, fontWeight: '900' }}>T</div>
+            <span style={{color: currentTheme.sidebarText}}>TrackScribe</span>
           </h2>
-          <button onClick={() => setDarkMode(!darkMode)} style={{background:'transparent', border:'none', cursor:'pointer', color:'#ffffff'}}>
+          <button onClick={() => setDarkMode(!darkMode)} style={{background:'transparent', border:'none', cursor:'pointer', color: currentTheme.sidebarText}}>
             {darkMode ? <Sun size={20}/> : <Moon size={20}/>}
           </button>
-          {isMobile && <button onClick={() => setShowMobileMenu(false)} style={{background:'none', border:'none', color:'#ffffff'}}><X size={20}/></button>}
+          {isMobile && <button onClick={() => setShowMobileMenu(false)} style={{background:'none', border:'none', color: currentTheme.sidebarText}}><X size={20}/></button>}
         </div>
         <nav style={{ padding: '20px 0', flex: 1, paddingRight: '12px' }}>
           <button onClick={() => { setView('dashboard'); setShowMobileMenu(false); }} style={{ ...styles.navBtn, ...(view === 'dashboard' ? styles.navBtnActive : {}) }}><LayoutDashboard size={18} /> Overview</button>
@@ -624,7 +624,7 @@ export default function App() {
                 
                 <div className="dashboard-grid">
                     <StatCard title="Total Lifetime Files" value={jobs.filter(j => j.status === 'Completed').length} icon={CheckCircle2} color={currentTheme.accent} theme={currentTheme} />
-                    <StatCard title="Pending Review" value={jobs.filter(j => j.status === 'Pending QA').length} icon={AlertCircle} color={darkMode ? '#9fe870' : '#c2410c'} theme={currentTheme} />
+                    <StatCard title="Pending Review" value={jobs.filter(j => j.status === 'Pending QA').length} icon={AlertCircle} color={darkMode ? '#ffffff' : '#191414'} theme={currentTheme} />
                 </div>
 
                 <div style={{ background: currentTheme.cardBg, padding: '24px', borderRadius: '16px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)', border: `1px solid ${currentTheme.border}` }}><h3 style={{ fontWeight: 'bold', marginBottom: '20px', fontSize: '14px', textTransform:'uppercase', color: currentTheme.mutedText }}>Weekly Output (Minutes)</h3><div style={{ height: '250px' }}><ResponsiveContainer width="100%" height="100%"><BarChart data={chartData}><CartesianGrid strokeDasharray="3 3" vertical={false} stroke={currentTheme.border} /><XAxis dataKey="date" axisLine={false} tickLine={false} tickFormatter={(str) => new Date(str).toLocaleDateString(undefined, {weekday: 'short'})} /><YAxis axisLine={false} tickLine={false} /><Tooltip cursor={{fill: 'transparent'}} /><Bar dataKey="minutes" fill={currentTheme.accent} radius={[4, 4, 4, 4]} barSize={32} /></BarChart></ResponsiveContainer></div></div>
