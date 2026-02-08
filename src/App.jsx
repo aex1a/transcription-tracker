@@ -5,7 +5,7 @@ import {
   LayoutDashboard, Plus, List, 
   Trash2, Edit2, ExternalLink, Search, 
   CheckCircle2, Clock, AlertCircle, Loader2, X, CalendarDays, Settings,
-  ArrowUpDown, ArrowUp, ArrowDown, Filter
+  ArrowUpDown, ArrowUp, ArrowDown, Filter, RotateCcw
 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 
@@ -166,6 +166,15 @@ export default function App() {
 
   const handleTimeChange = (e) => setFormData({...formData, timeString: e.target.value.replace(/[^0-9:]/g, '')});
 
+  // Filters Reset
+  const clearAllFilters = () => {
+    setSearchTerm('');
+    setFilterDate('');
+    setFilterType('All');
+  };
+
+  const hasActiveFilters = searchTerm || filterDate || filterType !== 'All';
+
   // Sorting
   const requestSort = (key) => {
     let direction = 'asc';
@@ -241,6 +250,8 @@ export default function App() {
     th: { backgroundColor: '#f8fafc', color: '#475569', padding: '12px 16px', textAlign: 'left', fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', borderBottom: '1px solid #e2e8f0' },
     thClickable: { cursor: 'pointer', userSelect: 'none', display:'flex', alignItems:'center', gap:'6px' },
     td: { padding: '14px 16px', borderBottom: '1px solid #f1f5f9', fontSize: '14px', color: '#334155' },
+    // Scrollable Cell Style
+    tdScrollable: { padding: '14px 16px', borderBottom: '1px solid #f1f5f9', fontSize: '14px', color: '#334155', fontWeight: '600', maxWidth: '200px', whiteSpace: 'nowrap', overflowX: 'auto', overflowY: 'hidden' },
     radioLabel: { display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', cursor: 'pointer', padding: '10px', borderRadius: '8px', border: '1px solid #e2e8f0', backgroundColor: '#f8fafc' },
     radioActive: { backgroundColor: '#e0e7ff', borderColor: '#6366f1', color: '#4338ca', fontWeight: '600' },
     primaryBtn: { backgroundColor: '#4f46e5', color: 'white', padding: '8px 16px', borderRadius: '8px', border: 'none', fontWeight: '600', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px' }
@@ -248,6 +259,12 @@ export default function App() {
 
   return (
     <div style={styles.container}>
+      {/* GLOBAL STYLE TO HIDE SCROLLBAR BUT ALLOW SCROLLING */}
+      <style>{`
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+      `}</style>
+
       <aside style={styles.sidebar} className="hidden-on-mobile">
         <div style={{ padding: '24px', borderBottom: '1px solid #1e293b' }}>
           <h2 style={{ fontSize: '18px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -294,7 +311,7 @@ export default function App() {
               </div>
             )}
 
-            {/* ENTRY MODAL (Visible when showEntryModal is true) */}
+            {/* ENTRY MODAL */}
             {showEntryModal && (
               <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(15, 23, 42, 0.7)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 }}>
                 <div style={{ backgroundColor: 'white', borderRadius: '16px', width: '100%', maxWidth: '480px', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)', overflow: 'hidden' }}>
@@ -382,22 +399,30 @@ export default function App() {
                   
                   {/* FILTERS + SEARCH + TOTAL HOURS */}
                   <div style={{ display: 'flex', flexDirection:'column', alignItems: 'flex-end', gap: '8px' }}>
+                    
                     <div style={{ background: '#e0e7ff', color: '#4338ca', padding: '8px 12px', borderRadius: '8px', fontWeight: '700', fontSize: '13px', border:'1px solid #c7d2fe', display:'flex', gap:'8px' }}>
                       <span>Total: {formatDecimalHours(listTotalSeconds)}</span>
                       <span style={{opacity:0.6}}>|</span>
                       <span>{formatDuration(listTotalSeconds)}</span>
                     </div>
                     
-                    <div style={{display:'flex', gap:'8px'}}>
-                        <select value={filterType} onChange={(e) => setFilterType(e.target.value)} style={{padding: '8px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px', cursor:'pointer', backgroundColor:'white'}}>
+                    <div style={{display:'flex', gap:'8px', alignItems:'center'}}>
+                        {/* CLEAR FILTER BUTTON (Only visible if filters active) */}
+                        {hasActiveFilters && (
+                          <button onClick={clearAllFilters} style={{display:'flex', alignItems:'center', gap:'4px', border:'none', background:'#fee2e2', color:'#ef4444', borderRadius:'8px', padding:'0 10px', height:'34px', cursor:'pointer', fontSize:'12px', fontWeight:'bold'}}>
+                            <RotateCcw size={12} /> Reset
+                          </button>
+                        )}
+
+                        <select value={filterType} onChange={(e) => setFilterType(e.target.value)} style={{padding: '8px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px', cursor:'pointer', backgroundColor:'white', height:'34px'}}>
                             <option value="All">All Types</option>
                             <option value="Mantis">Mantis</option>
                             <option value="Cricket">Cricket</option>
                         </select>
-                        <input type="date" value={filterDate} onChange={(e) => setFilterDate(e.target.value)} style={{padding: '8px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px', backgroundColor:'white'}} />
+                        <input type="date" value={filterDate} onChange={(e) => setFilterDate(e.target.value)} style={{padding: '8px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px', backgroundColor:'white', height:'34px', boxSizing:'border-box'}} />
                         <div style={{position:'relative'}}>
-                            <Search size={16} style={{position:'absolute', left:'10px', top:'10px', opacity:0.4}} />
-                            <input style={{...styles.input, width: '200px', backgroundColor: 'white', paddingLeft:'32px'}} placeholder="Search..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+                            <Search size={16} style={{position:'absolute', left:'10px', top:'9px', opacity:0.4}} />
+                            <input style={{...styles.input, width: '200px', backgroundColor: 'white', paddingLeft:'32px', height:'34px'}} placeholder="Search..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
                         </div>
                     </div>
                   </div>
@@ -426,7 +451,9 @@ export default function App() {
                       {sortedJobs.length > 0 ? sortedJobs.map(job => (
                         <tr key={job.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
                           <td style={styles.td}>{formatDate(job.date)}</td>
-                          <td style={{...styles.td, fontWeight: '600', maxWidth: '220px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'}} title={job.file_name}>{job.file_name}</td>
+                          {/* SCROLLABLE CELL FOR FILE NAME */}
+                          <td style={styles.tdScrollable} className="no-scrollbar">{job.file_name}</td>
+                          
                           <td style={styles.td}>{job.client||'-'}</td>
                           <td style={{...styles.td, fontFamily: 'monospace', color:'#6366f1'}}>{formatDuration(job.total_seconds)}</td>
                           <td style={styles.td}><StatusBadge status={job.status} /></td>
