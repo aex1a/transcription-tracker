@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from './supabase'; 
 import { Analytics } from "@vercel/analytics/react"; 
-import XLSX from 'xlsx-js-style'; // CHANGED: Must use 'xlsx-js-style' for colors/bold/borders
+import XLSX from 'xlsx-js-style'; 
 import { 
   LayoutDashboard, Plus, List, Timer, 
   Trash2, Edit2, ExternalLink, Search, 
@@ -112,9 +112,20 @@ export default function App() {
   const [colWidth, setColWidth] = useState(250); 
   const resizingRef = useRef(false);
 
+  // --- UPDATED BILLING STATE: Uses Start AND End Date ---
   const [billingStartDate, setBillingStartDate] = useState(() => localStorage.getItem('billingStartDate') || new Date().toISOString().split('T')[0]);
+  const [billingEndDate, setBillingEndDate] = useState(() => {
+    // Default end date is 1 month from now if not set
+    const saved = localStorage.getItem('billingEndDate');
+    if (saved) return saved;
+    const d = new Date();
+    d.setMonth(d.getMonth() + 1);
+    return d.toISOString().split('T')[0];
+  });
+
   const [showBillingModal, setShowBillingModal] = useState(false);
-  const [tempBillingDate, setTempBillingDate] = useState(billingStartDate);
+  const [tempBillingStart, setTempBillingStart] = useState(billingStartDate);
+  const [tempBillingEnd, setTempBillingEnd] = useState(billingEndDate);
 
   const [formData, setFormData] = useState({ 
     file_name: '', client: 'Mantis', timeString: '', 
@@ -141,7 +152,8 @@ export default function App() {
   
   useEffect(() => { 
     localStorage.setItem('billingStartDate', billingStartDate); 
-  }, [billingStartDate]);
+    localStorage.setItem('billingEndDate', billingEndDate); 
+  }, [billingStartDate, billingEndDate]);
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 768);
@@ -241,16 +253,14 @@ export default function App() {
     return `Unnamed File ${maxNum + 1}`;
   };
 
-  // --- EXPORT EXCEL LOGIC (UPDATED) ---
+  // --- EXPORT EXCEL LOGIC ---
   const downloadBillingXLSX = () => {
-    const cycle = getBillingCycle();
-    
-    // 1. FILTER: Date Range AND Status = 'Completed'
+    // 1. FILTER: Using the explicit Start and End dates
     const cycleJobs = jobs.filter(j => { 
         const d = new Date(j.date); 
         d.setHours(0,0,0,0);
-        const s = new Date(cycle.start); s.setHours(0,0,0,0);
-        const e = new Date(cycle.end); e.setHours(23,59,59,999);
+        const s = new Date(billingStartDate); s.setHours(0,0,0,0);
+        const e = new Date(billingEndDate); e.setHours(23,59,59,999);
         return d >= s && d <= e && j.status === 'Completed'; 
     });
 
@@ -259,8 +269,7 @@ export default function App() {
         return;
     }
 
-    // 2. Prepare Data (Remove Notes, Add Decimal Hours)
-    // Calculate total hours first
+    // 2. Prepare Data
     const totalHoursSum = cycleJobs.reduce((acc, job) => acc + (job.total_seconds / 3600), 0);
 
     const exportData = cycleJobs.map(job => ({
@@ -273,13 +282,13 @@ export default function App() {
         "Link": job.link || ""
     }));
 
-    // 3. Add TOTAL Row at the bottom
+    // 3. Add TOTAL Row
     exportData.push({
         "Date": "", 
-        "File Name": "TOTAL", // Will be bolded
+        "File Name": "TOTAL", 
         "Client": "",
         "Duration": "",
-        "Total Hours (Decimal)": parseFloat(totalHoursSum.toFixed(4)), // The Sum
+        "Total Hours (Decimal)": parseFloat(totalHoursSum.toFixed(4)), 
         "Status": "",
         "Link": ""
     });
@@ -287,10 +296,8 @@ export default function App() {
     // 4. Create Sheet
     const ws = XLSX.utils.json_to_sheet(exportData);
 
-    // 5. STYLING: Apply Borders and Bold Headers/Totals
+    // 5. STYLING
     const range = XLSX.utils.decode_range(ws['!ref']);
-    
-    // Define Border Style
     const borderStyle = {
         top: { style: "thin", color: { auto: 1 } },
         bottom: { style: "thin", color: { auto: 1 } },
@@ -303,38 +310,29 @@ export default function App() {
             const cell_address = XLSX.utils.encode_cell({r: R, c: C});
             if (!ws[cell_address]) continue;
 
-            // Apply Borders to ALL cells
+            // Borders
             if (!ws[cell_address].s) ws[cell_address].s = {};
             ws[cell_address].s.border = borderStyle;
 
-            // Bold for HEADER (Row 0)
+            // Bold Header
             if (R === 0) {
                 ws[cell_address].s.font = { bold: true };
                 ws[cell_address].s.alignment = { horizontal: "center" };
             }
 
-            // Bold for TOTAL ROW (Last Row)
+            // Bold Total Row
             if (R === range.e.r) {
                 ws[cell_address].s.font = { bold: true };
             }
         }
     }
 
-    // 6. Auto-width Columns
-    const wscols = [
-        {wch: 12}, // Date
-        {wch: 40}, // Name
-        {wch: 10}, // Client
-        {wch: 10}, // Duration
-        {wch: 22}, // Total Hours (Dec)
-        {wch: 12}, // Status
-        {wch: 30}  // Link
-    ];
+    const wscols = [{wch: 12}, {wch: 40}, {wch: 10}, {wch: 10}, {wch: 22}, {wch: 12}, {wch: 30}];
     ws['!cols'] = wscols;
 
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Billing Cycle");
-    const fileName = `Billing_${cycle.start.toISOString().split('T')[0]}_to_${cycle.end.toISOString().split('T')[0]}.xlsx`;
+    const fileName = `Billing_${billingStartDate}_to_${billingEndDate}.xlsx`;
     XLSX.writeFile(wb, fileName);
   };
 
@@ -456,12 +454,11 @@ export default function App() {
   const requestSort = (key) => { let direction = 'asc'; if (sortConfig.key === key && sortConfig.direction === 'asc') direction = 'desc'; setSortConfig({ key, direction }); };
   const SortIcon = ({ column }) => { if (sortConfig.key !== column) return <ArrowUpDown size={14} style={{opacity:0.3}} />; return sortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />; };
 
+  // --- UPDATED BILLING CALCULATION ---
   const getBillingCycle = () => { 
-    if (!billingStartDate) return { start: new Date(), end: new Date(), label: '' };
+    if (!billingStartDate || !billingEndDate) return { start: new Date(), end: new Date(), label: '' };
     const start = new Date(billingStartDate);
-    const end = new Date(start);
-    end.setMonth(end.getMonth() + 1);
-    end.setDate(end.getDate() - 1);
+    const end = new Date(billingEndDate);
     const opt = { month: 'short', day: 'numeric', year: 'numeric' };
     return { start, end, label: `${start.toLocaleDateString('en-US', opt)} - ${end.toLocaleDateString('en-US', opt)}` }; 
   };
@@ -470,8 +467,8 @@ export default function App() {
   const cycleJobs = jobs.filter(j => { 
     const d = new Date(j.date); 
     d.setHours(0,0,0,0);
-    const s = new Date(cycle.start); s.setHours(0,0,0,0);
-    const e = new Date(cycle.end); e.setHours(23,59,59,999);
+    const s = new Date(billingStartDate); s.setHours(0,0,0,0);
+    const e = new Date(billingEndDate); e.setHours(23,59,59,999);
     return d >= s && d <= e && j.status === 'Completed'; 
   });
   
@@ -574,7 +571,11 @@ export default function App() {
                         label={cycle.label} 
                         count={cycleJobs.length} 
                         hours={formatDecimalHours(cycleSecs)} 
-                        onEdit={() => { setTempBillingDate(billingStartDate); setShowBillingModal(true); }} 
+                        onEdit={() => { 
+                            setTempBillingStart(billingStartDate); 
+                            setTempBillingEnd(billingEndDate);
+                            setShowBillingModal(true); 
+                        }} 
                         onExport={downloadBillingXLSX}
                     />
                 </div>
@@ -585,6 +586,46 @@ export default function App() {
                 </div>
 
                 <div style={{ background: 'white', padding: '24px', borderRadius: '16px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)' }}><h3 style={{ fontWeight: 'bold', marginBottom: '20px', fontSize: '14px', textTransform:'uppercase', color:'#64748b' }}>Weekly Output (Minutes)</h3><div style={{ height: '250px' }}><ResponsiveContainer width="100%" height="100%"><BarChart data={chartData}><CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" /><XAxis dataKey="date" axisLine={false} tickLine={false} tickFormatter={(str) => new Date(str).toLocaleDateString(undefined, {weekday: 'short'})} /><YAxis axisLine={false} tickLine={false} /><Tooltip cursor={{fill: 'transparent'}} /><Bar dataKey="minutes" fill="#6366f1" radius={[4, 4, 4, 4]} barSize={32} /></BarChart></ResponsiveContainer></div></div>
+              </div>
+            )}
+
+            {/* --- UPDATED BILLING MODAL: TWO INPUTS --- */}
+            {showBillingModal && (
+              <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(15, 23, 42, 0.7)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 }}>
+                <div style={{ backgroundColor: 'white', borderRadius: '16px', width: '100%', maxWidth: '350px', padding: '24px' }}>
+                  <h3 style={{ margin: '0 0 16px 0', fontSize: '16px', fontWeight: 'bold' }}>Billing Settings</h3>
+                  
+                  <div style={{marginBottom:'12px'}}>
+                      <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', color: '#64748b', marginBottom: '6px', textTransform: 'uppercase' }}>Start Date</label>
+                      <input 
+                        type="date" 
+                        value={tempBillingStart} 
+                        onChange={(e) => setTempBillingStart(e.target.value)} 
+                        style={styles.input} 
+                      />
+                  </div>
+
+                  <div style={{marginBottom:'16px'}}>
+                      <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', color: '#64748b', marginBottom: '6px', textTransform: 'uppercase' }}>End Date</label>
+                      <input 
+                        type="date" 
+                        value={tempBillingEnd} 
+                        onChange={(e) => setTempBillingEnd(e.target.value)} 
+                        style={styles.input} 
+                      />
+                  </div>
+                  
+                  <button onClick={() => { 
+                      if(new Date(tempBillingStart) > new Date(tempBillingEnd)) {
+                          alert("Start Date cannot be after End Date");
+                          return;
+                      }
+                      setBillingStartDate(tempBillingStart); 
+                      setBillingEndDate(tempBillingEnd);
+                      setShowBillingModal(false); 
+                  }} style={{ width: '100%', marginTop: '10px', padding: '10px', background: '#4f46e5', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}>Save Changes</button>
+                  <button onClick={() => setShowBillingModal(false)} style={{ width: '100%', marginTop: '10px', padding: '10px', background: 'transparent', color: '#64748b', border: 'none', fontWeight: 'bold', cursor: 'pointer' }}>Cancel</button>
+                </div>
               </div>
             )}
 
@@ -714,26 +755,6 @@ export default function App() {
               </div>
             )}
 
-            {showBillingModal && (
-              <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(15, 23, 42, 0.7)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 }}>
-                <div style={{ backgroundColor: 'white', borderRadius: '16px', width: '100%', maxWidth: '350px', padding: '24px' }}>
-                  <h3 style={{ margin: '0 0 16px 0', fontSize: '16px', fontWeight: 'bold' }}>Billing Settings</h3>
-                  <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', color: '#64748b', marginBottom: '6px', textTransform: 'uppercase' }}>Start Date of Current Cycle</label>
-                  
-                  <input 
-                    type="date" 
-                    value={tempBillingDate} 
-                    onChange={(e) => setTempBillingDate(e.target.value)} 
-                    style={styles.input} 
-                  />
-                  
-                  <p style={{fontSize:'12px', color:'#64748b', marginTop:'8px'}}>The cycle will run from this date until 1 month later.</p>
-                  <button onClick={() => { setBillingStartDate(tempBillingDate); setShowBillingModal(false); }} style={{ width: '100%', marginTop: '20px', padding: '10px', background: '#4f46e5', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}>Save Changes</button>
-                  <button onClick={() => setShowBillingModal(false)} style={{ width: '100%', marginTop: '10px', padding: '10px', background: 'transparent', color: '#64748b', border: 'none', fontWeight: 'bold', cursor: 'pointer' }}>Cancel</button>
-                </div>
-              </div>
-            )}
-            
             {view === 'list' && (
               <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
                 <div style={{ display: 'flex', flexWrap:'wrap', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', gap:'10px' }}>
