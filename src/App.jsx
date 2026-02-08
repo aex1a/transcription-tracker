@@ -6,7 +6,7 @@ import {
   Trash2, Edit2, ExternalLink, Search, 
   CheckCircle2, Clock, AlertCircle, Loader2, X, CalendarDays, Settings,
   ArrowUpDown, ArrowUp, ArrowDown, Filter, RotateCcw, GripVertical,
-  Play, Pause, Square, ArrowRight, Check
+  Play, Pause, Square, ArrowRight, Check, Menu
 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 
@@ -61,7 +61,7 @@ const formatDate = (dateString) => {
 // --- Components ---
 
 const BillingCard = ({ label, count, hours, onEdit }) => (
-  <div style={{ background: 'linear-gradient(135deg, #4f46e5 0%, #312e81 100%)', borderRadius: '16px', padding: '24px', color: 'white', boxShadow: '0 10px 15px -3px rgba(79, 70, 229, 0.3)', position: 'relative' }}>
+  <div className="billing-card" style={{ background: 'linear-gradient(135deg, #4f46e5 0%, #312e81 100%)', borderRadius: '16px', padding: '24px', color: 'white', boxShadow: '0 10px 15px -3px rgba(79, 70, 229, 0.3)', position: 'relative' }}>
     <button onClick={onEdit} style={{ position: 'absolute', top: '20px', right: '20px', background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: '50%', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'white' }} title="Edit Billing Cycle">
       <Settings size={16} />
     </button>
@@ -69,9 +69,9 @@ const BillingCard = ({ label, count, hours, onEdit }) => (
       <div><p style={{ fontSize: '13px', fontWeight: '600', opacity: 0.9, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Current Billing Cycle</p><p style={{ fontSize: '14px', fontWeight: 'bold', marginTop: '4px', color: '#e0e7ff' }}>{label}</p></div>
       <CalendarDays size={24} style={{ opacity: 0.8, marginRight: '40px' }} />
     </div>
-    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+    <div className="billing-stats-grid">
       <div><h3 style={{ fontSize: '32px', fontWeight: '800', lineHeight: '1' }}>{count}</h3><p style={{ fontSize: '13px', opacity: 0.8, marginTop: '4px' }}>Files Completed</p></div>
-      <div style={{ borderLeft: '1px solid rgba(255,255,255,0.2)', paddingLeft: '20px' }}><h3 style={{ fontSize: '32px', fontWeight: '800', lineHeight: '1' }}>{hours}</h3><p style={{ fontSize: '13px', opacity: 0.8, marginTop: '4px' }}>Audio Hours</p></div>
+      <div className="billing-separator"><h3 style={{ fontSize: '32px', fontWeight: '800', lineHeight: '1' }}>{hours}</h3><p style={{ fontSize: '13px', opacity: 0.8, marginTop: '4px' }}>Audio Hours</p></div>
     </div>
   </div>
 );
@@ -93,6 +93,10 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState('dashboard');
   
+  // RESPONSIVENESS STATE
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  const [showMobileMenu, setShowMobileMenu] = useState(false);
+
   // FILTERS
   const [searchTerm, setSearchTerm] = useState('');
   const [filterDate, setFilterDate] = useState('');
@@ -102,9 +106,10 @@ export default function App() {
   const [colWidth, setColWidth] = useState(250); 
   const resizingRef = useRef(false);
 
-  const [billingStartDay, setBillingStartDay] = useState(() => parseInt(localStorage.getItem('billingStart') || '13'));
+  // --- UPDATED BILLING STATE: Uses Full Date String ---
+  const [billingStartDate, setBillingStartDate] = useState(() => localStorage.getItem('billingStartDate') || new Date().toISOString().split('T')[0]);
   const [showBillingModal, setShowBillingModal] = useState(false);
-  const [tempBillingDay, setTempBillingDay] = useState(billingStartDay);
+  const [tempBillingDate, setTempBillingDate] = useState(billingStartDate);
 
   const [formData, setFormData] = useState({ 
     file_name: '', client: 'Mantis', timeString: '', 
@@ -126,9 +131,18 @@ export default function App() {
   const [totalTat, setTotalTat] = useState(0); 
   const timerIntervalRef = useRef(null);
 
-  // --- Data Fetching ---
+  // --- Data Fetching & Window Resize Listener ---
   useEffect(() => { fetchJobs(); }, []);
-  useEffect(() => { localStorage.setItem('billingStart', billingStartDay); }, [billingStartDay]);
+  
+  useEffect(() => { 
+    localStorage.setItem('billingStartDate', billingStartDate); 
+  }, [billingStartDate]);
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   // --- TIMER EFFECT ---
   useEffect(() => {
@@ -323,9 +337,33 @@ export default function App() {
   const requestSort = (key) => { let direction = 'asc'; if (sortConfig.key === key && sortConfig.direction === 'asc') direction = 'desc'; setSortConfig({ key, direction }); };
   const SortIcon = ({ column }) => { if (sortConfig.key !== column) return <ArrowUpDown size={14} style={{opacity:0.3}} />; return sortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />; };
 
-  const getBillingCycle = () => { const today = new Date(); const d = today.getDate(), m = today.getMonth(), y = today.getFullYear(); const s = billingStartDay; let start, end; if (d >= s) { start = new Date(y, m, s); end = new Date(y, m + 1, s - 1); } else { start = new Date(y, m - 1, s); end = new Date(y, m, s - 1); } const opt = { month: 'short', day: 'numeric' }; return { start, end, label: `${start.toLocaleDateString('en-US', opt)} - ${end.toLocaleDateString('en-US', opt)}` }; };
+  // --- UPDATED BILLING CALCULATION ---
+  const getBillingCycle = () => { 
+    if (!billingStartDate) return { start: new Date(), end: new Date(), label: '' };
+    
+    // Start date is exactly what the user picked
+    const start = new Date(billingStartDate);
+    
+    // End date is Start + 1 Month - 1 Day
+    const end = new Date(start);
+    end.setMonth(end.getMonth() + 1);
+    end.setDate(end.getDate() - 1);
+    
+    const opt = { month: 'short', day: 'numeric', year: 'numeric' };
+    return { start, end, label: `${start.toLocaleDateString('en-US', opt)} - ${end.toLocaleDateString('en-US', opt)}` }; 
+  };
+  
   const cycle = getBillingCycle();
-  const cycleJobs = jobs.filter(j => { const d = new Date(j.date); return d >= cycle.start && d <= cycle.end && j.status === 'Completed'; });
+  const cycleJobs = jobs.filter(j => { 
+    const d = new Date(j.date); 
+    // Reset times to compare dates only
+    d.setHours(0,0,0,0);
+    const s = new Date(cycle.start); s.setHours(0,0,0,0);
+    const e = new Date(cycle.end); e.setHours(23,59,59,999);
+    
+    return d >= s && d <= e && j.status === 'Completed'; 
+  });
+  
   const cycleSecs = cycleJobs.reduce((acc, curr) => acc + (curr.total_seconds || 0), 0);
   const filteredJobs = jobs.filter(j => { const matchesSearch = j.file_name.toLowerCase().includes(searchTerm.toLowerCase()); const matchesDate = filterDate ? j.date === filterDate : true; const matchesType = filterType === 'All' ? true : (j.client === filterType); return matchesSearch && matchesDate && matchesType; });
   const listTotalSeconds = filteredJobs.reduce((acc, job) => acc + (job.total_seconds || 0), 0);
@@ -333,9 +371,9 @@ export default function App() {
   const chartData = jobs.reduce((acc, job) => { const d = job.date; const f = acc.find(i => i.date === d); const m = Math.floor((job.total_seconds || 0) / 60); if (f) f.minutes += m; else acc.push({ date: d, minutes: m }); return acc; }, []).sort((a, b) => new Date(a.date) - new Date(b.date)).slice(-7);
 
   const styles = {
-    container: { fontFamily: 'Inter, sans-serif', backgroundColor: '#f1f5f9', minHeight: '100vh', display: 'flex' },
-    sidebar: { width: '250px', backgroundColor: '#0f172a', color: 'white', display: 'flex', flexDirection: 'column', position: 'fixed', height: '100%', zIndex: 50 },
-    main: { flex: 1, marginLeft: '250px', padding: '2rem', overflowY: 'auto' },
+    container: { fontFamily: 'Inter, sans-serif', backgroundColor: '#f1f5f9', minHeight: '100vh', display: 'flex', flexDirection: 'column' },
+    sidebar: { width: '250px', backgroundColor: '#0f172a', color: 'white', display: 'flex', flexDirection: 'column', position: 'fixed', height: '100%', zIndex: 50, transition: 'transform 0.3s ease', transform: isMobile && !showMobileMenu ? 'translateX(-100%)' : 'translateX(0)' },
+    main: { flex: 1, marginLeft: isMobile ? '0' : '250px', padding: isMobile ? '1rem' : '2rem', overflowY: 'auto' },
     navBtn: { display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 20px', width: '100%', background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', fontSize: '14px', fontWeight: '500', transition: 'all 0.2s' },
     navBtnActive: { backgroundColor: '#1e293b', color: 'white', borderRight: '3px solid #6366f1' },
     input: { width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '14px', outline: 'none', backgroundColor: '#f8fafc', boxSizing:'border-box' },
@@ -363,38 +401,86 @@ export default function App() {
 
   return (
     <div style={styles.container}>
-      <style>{` .no-scrollbar::-webkit-scrollbar { display: none; } .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; } `}</style>
+      <style>{` 
+        .no-scrollbar::-webkit-scrollbar { display: none; } 
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; } 
+        
+        /* Default Grid (Desktop) */
+        .dashboard-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 30px; }
+        .billing-stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .billing-separator { border-left: 1px solid rgba(255,255,255,0.2); padding-left: 20px; }
 
-      <aside style={styles.sidebar} className="hidden-on-mobile">
-        <div style={{ padding: '24px', borderBottom: '1px solid #1e293b' }}>
-          <h2 style={{ fontSize: '18px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '10px' }}>
+        /* Mobile Responsive Overrides */
+        @media (max-width: 768px) {
+            .billing-stats-grid { grid-template-columns: 1fr; gap: 10px; }
+            .billing-separator { border-left: none; padding-left: 0; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.2); }
+            .dashboard-grid { grid-template-columns: 1fr; }
+            .billing-card { text-align: center; }
+            .billing-card h3 { font-size: 28px !important; }
+            
+            /* Hide non-essential elements on very small screens */
+            .hidden-mobile { display: none; }
+        }
+      `}</style>
+
+      {/* MOBILE HEADER */}
+      {isMobile && (
+        <div style={{ padding: '16px', background: 'white', borderBottom: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', zIndex: 60 }}>
+            <div style={{display:'flex', alignItems:'center', gap:'12px'}}>
+                <button onClick={() => setShowMobileMenu(!showMobileMenu)} style={{border:'none', background:'none'}}><Menu size={24} color="#0f172a"/></button>
+                <span style={{fontWeight:'bold', color:'#0f172a'}}>TrackScribe</span>
+            </div>
+            <button onClick={openNewEntry} style={{backgroundColor:'#6366f1', color:'white', border:'none', padding:'6px 12px', borderRadius:'6px', fontSize:'12px'}}>+ Add</button>
+        </div>
+      )}
+
+      {/* SIDEBAR */}
+      <aside style={styles.sidebar}>
+        <div style={{ padding: '24px', borderBottom: '1px solid #1e293b', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <h2 style={{ fontSize: '18px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '10px', margin: 0 }}>
             <div style={{ background: '#6366f1', width: '28px', height: '28px', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>T</div>
             TrackScribe
           </h2>
+          {isMobile && <button onClick={() => setShowMobileMenu(false)} style={{background:'none', border:'none', color:'white'}}><X size={20}/></button>}
         </div>
         <nav style={{ padding: '20px 0', flex: 1 }}>
-          <button onClick={() => setView('dashboard')} style={{ ...styles.navBtn, ...(view === 'dashboard' ? styles.navBtnActive : {}) }}><LayoutDashboard size={18} /> Overview</button>
-          <button onClick={() => setView('timer')} style={{ ...styles.navBtn, ...(view === 'timer' ? styles.navBtnActive : {}) }}><Timer size={18} /> Timer</button>
-          <button onClick={() => setView('list')} style={{ ...styles.navBtn, ...(view === 'list' ? styles.navBtnActive : {}) }}><List size={18} /> All Files</button>
+          <button onClick={() => { setView('dashboard'); setShowMobileMenu(false); }} style={{ ...styles.navBtn, ...(view === 'dashboard' ? styles.navBtnActive : {}) }}><LayoutDashboard size={18} /> Overview</button>
+          <button onClick={() => { setView('timer'); setShowMobileMenu(false); }} style={{ ...styles.navBtn, ...(view === 'timer' ? styles.navBtnActive : {}) }}><Timer size={18} /> Timer</button>
+          <button onClick={() => { setView('list'); setShowMobileMenu(false); }} style={{ ...styles.navBtn, ...(view === 'list' ? styles.navBtnActive : {}) }}><List size={18} /> All Files</button>
         </nav>
       </aside>
+      
+      {/* OVERLAY FOR MOBILE MENU */}
+      {isMobile && showMobileMenu && (
+        <div onClick={() => setShowMobileMenu(false)} style={{position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', zIndex:40}} />
+      )}
 
-      <main style={{ ...styles.main, marginLeft: window.innerWidth < 768 ? '0' : '250px' }}>
-        <div style={{ display: window.innerWidth < 768 ? 'flex' : 'none', justifyContent: 'space-between', marginBottom: '20px', alignItems: 'center' }}>
-           <h2 style={{ fontWeight: 'bold', fontSize: '1.2rem', color: '#1e1b4b' }}>TrackScribe</h2>
-           <button onClick={openNewEntry} style={{backgroundColor:'#6366f1', color:'white', border:'none', padding:'6px 12px', borderRadius:'6px'}}>+ Add</button>
-        </div>
-
+      <main style={styles.main}>
         {loading ? <div style={{display:'flex', justifyContent:'center', marginTop:'50px'}}><Loader2 className="animate-spin text-indigo-500" /></div> : (
           <>
             {view === 'dashboard' && (
               <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-                  <h2 style={{ fontSize: '24px', fontWeight: 'bold', color: '#0f172a', margin: 0 }}>Dashboard</h2>
-                  <button onClick={openNewEntry} style={styles.primaryBtn}><Plus size={16} /> Add New Entry</button>
+                {!isMobile && (
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+                    <h2 style={{ fontSize: '24px', fontWeight: 'bold', color: '#0f172a', margin: 0 }}>Dashboard</h2>
+                    <button onClick={openNewEntry} style={styles.primaryBtn}><Plus size={16} /> Add New Entry</button>
+                    </div>
+                )}
+                
+                <div style={{ marginBottom: '30px' }}>
+                    <BillingCard 
+                        label={cycle.label} 
+                        count={cycleJobs.length} 
+                        hours={formatDecimalHours(cycleSecs)} 
+                        onEdit={() => { setTempBillingDate(billingStartDate); setShowBillingModal(true); }} 
+                    />
                 </div>
-                <div style={{ marginBottom: '30px' }}><BillingCard label={cycle.label} count={cycleJobs.length} hours={formatDecimalHours(cycleSecs)} onEdit={() => { setTempBillingDay(billingStartDay); setShowBillingModal(true); }} /></div>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px', marginBottom: '30px' }}><StatCard title="Total Lifetime Files" value={jobs.filter(j => j.status === 'Completed').length} icon={CheckCircle2} color="#10b981" /><StatCard title="Pending Review" value={jobs.filter(j => j.status === 'Pending QA').length} icon={AlertCircle} color="#f59e0b" /></div>
+                
+                <div className="dashboard-grid">
+                    <StatCard title="Total Lifetime Files" value={jobs.filter(j => j.status === 'Completed').length} icon={CheckCircle2} color="#10b981" />
+                    <StatCard title="Pending Review" value={jobs.filter(j => j.status === 'Pending QA').length} icon={AlertCircle} color="#f59e0b" />
+                </div>
+
                 <div style={{ background: 'white', padding: '24px', borderRadius: '16px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)' }}><h3 style={{ fontWeight: 'bold', marginBottom: '20px', fontSize: '14px', textTransform:'uppercase', color:'#64748b' }}>Weekly Output (Minutes)</h3><div style={{ height: '250px' }}><ResponsiveContainer width="100%" height="100%"><BarChart data={chartData}><CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" /><XAxis dataKey="date" axisLine={false} tickLine={false} tickFormatter={(str) => new Date(str).toLocaleDateString(undefined, {weekday: 'short'})} /><YAxis axisLine={false} tickLine={false} /><Tooltip cursor={{fill: 'transparent'}} /><Bar dataKey="minutes" fill="#6366f1" radius={[4, 4, 4, 4]} barSize={32} /></BarChart></ResponsiveContainer></div></div>
               </div>
             )}
@@ -422,7 +508,7 @@ export default function App() {
                   </div>
 
                   {/* FORM FIELDS (Disabled during SV stage to prevent changing core file info) */}
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
                     {/* OPTIONAL FILE NAME INPUT */}
                     <div>
                       <label style={styles.label}>File Name (Optional)</label>
@@ -465,7 +551,7 @@ export default function App() {
                   </div>
 
                   {/* TIMER CONTROLS - DYNAMIC BASED ON STAGE */}
-                  <div style={styles.timerControls}>
+                  <div style={{...styles.timerControls, flexDirection: isMobile ? 'column' : 'row'}}>
                     {!timerRunning ? (
                         <button onClick={handleTimerStartPause} style={{...styles.controlBtn, ...styles.startBtn}} disabled={totalTat === 0}>
                             <Play size={16} fill="white" /> Start Timer
@@ -499,7 +585,7 @@ export default function App() {
             {/* ENTRY MODAL */}
             {showEntryModal && (
               <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(15, 23, 42, 0.7)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 }}>
-                <div style={{ backgroundColor: 'white', borderRadius: '16px', width: '100%', maxWidth: '480px', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)', overflow: 'hidden' }}>
+                <div style={{ backgroundColor: 'white', borderRadius: '16px', width: '100%', maxWidth: '480px', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)' }}>
                   <div style={{ padding: '16px 24px', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <h2 style={{ margin: 0, fontSize: '16px', fontWeight: 'bold', color: '#0f172a' }}>{isEditing ? 'Edit Entry' : 'New Entry'}</h2>
                     <button onClick={() => setShowEntryModal(false)} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: '#64748b' }}><X size={20}/></button>
@@ -528,19 +614,38 @@ export default function App() {
               </div>
             )}
 
-            {showBillingModal && (<div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(15, 23, 42, 0.7)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 }}><div style={{ backgroundColor: 'white', borderRadius: '16px', width: '100%', maxWidth: '350px', padding: '24px' }}><h3 style={{ margin: '0 0 16px 0', fontSize: '16px', fontWeight: 'bold' }}>Billing Settings</h3><label style={{ display: 'block', fontSize: '12px', fontWeight: '600', color: '#64748b', marginBottom: '6px', textTransform: 'uppercase' }}>Start Day</label><input type="number" min="1" max="31" value={tempBillingDay} onChange={(e) => setTempBillingDay(parseInt(e.target.value))} style={styles.input} /><p style={{fontSize:'12px', color:'#64748b', marginTop:'8px'}}>Example: <strong>13</strong> means cycle runs from 13th to 12th.</p><button onClick={() => { setBillingStartDay(tempBillingDay); setShowBillingModal(false); }} style={{ width: '100%', marginTop: '20px', padding: '10px', background: '#4f46e5', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}>Save Changes</button><button onClick={() => setShowBillingModal(false)} style={{ width: '100%', marginTop: '10px', padding: '10px', background: 'transparent', color: '#64748b', border: 'none', fontWeight: 'bold', cursor: 'pointer' }}>Cancel</button></div></div>)}
+            {showBillingModal && (
+              <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(15, 23, 42, 0.7)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 }}>
+                <div style={{ backgroundColor: 'white', borderRadius: '16px', width: '100%', maxWidth: '350px', padding: '24px' }}>
+                  <h3 style={{ margin: '0 0 16px 0', fontSize: '16px', fontWeight: 'bold' }}>Billing Settings</h3>
+                  <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', color: '#64748b', marginBottom: '6px', textTransform: 'uppercase' }}>Start Date of Current Cycle</label>
+                  
+                  {/* CHANGED TO DATE INPUT */}
+                  <input 
+                    type="date" 
+                    value={tempBillingDate} 
+                    onChange={(e) => setTempBillingDate(e.target.value)} 
+                    style={styles.input} 
+                  />
+                  
+                  <p style={{fontSize:'12px', color:'#64748b', marginTop:'8px'}}>The cycle will run from this date until 1 month later.</p>
+                  <button onClick={() => { setBillingStartDate(tempBillingDate); setShowBillingModal(false); }} style={{ width: '100%', marginTop: '20px', padding: '10px', background: '#4f46e5', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}>Save Changes</button>
+                  <button onClick={() => setShowBillingModal(false)} style={{ width: '100%', marginTop: '10px', padding: '10px', background: 'transparent', color: '#64748b', border: 'none', fontWeight: 'bold', cursor: 'pointer' }}>Cancel</button>
+                </div>
+              </div>
+            )}
             
             {view === 'list' && (
               <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
                 <div style={{ display: 'flex', flexWrap:'wrap', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', gap:'10px' }}>
-                  <div style={{display:'flex', alignItems:'center', gap:'16px'}}><h2 style={{ fontSize: '24px', fontWeight: 'bold', color: '#0f172a', margin: '0' }}>File History</h2><button onClick={openNewEntry} style={styles.primaryBtn}><Plus size={16} /> Add New</button></div>
-                  <div style={{ display: 'flex', flexDirection:'column', alignItems: 'flex-end', gap: '8px' }}>
-                    <div style={{ background: '#e0e7ff', color: '#4338ca', padding: '8px 12px', borderRadius: '8px', fontWeight: '700', fontSize: '13px', border:'1px solid #c7d2fe', display:'flex', gap:'8px' }}><span>Total: {formatDecimalHours(listTotalSeconds)}</span><span style={{opacity:0.6}}>|</span><span>{formatDuration(listTotalSeconds)}</span></div>
-                    <div style={{display:'flex', gap:'8px', alignItems:'center'}}>
+                  {!isMobile && <div style={{display:'flex', alignItems:'center', gap:'16px'}}><h2 style={{ fontSize: '24px', fontWeight: 'bold', color: '#0f172a', margin: '0' }}>File History</h2><button onClick={openNewEntry} style={styles.primaryBtn}><Plus size={16} /> Add New</button></div>}
+                  <div style={{ display: 'flex', flexDirection:'column', alignItems: 'flex-end', gap: '8px', width: isMobile ? '100%' : 'auto' }}>
+                    <div style={{ background: '#e0e7ff', color: '#4338ca', padding: '8px 12px', borderRadius: '8px', fontWeight: '700', fontSize: '13px', border:'1px solid #c7d2fe', display:'flex', gap:'8px', width: isMobile ? '100%' : 'auto', justifyContent: isMobile ? 'center' : 'flex-start' }}><span>Total: {formatDecimalHours(listTotalSeconds)}</span><span style={{opacity:0.6}}>|</span><span>{formatDuration(listTotalSeconds)}</span></div>
+                    <div style={{display:'flex', gap:'8px', alignItems:'center', flexWrap: 'wrap', width: isMobile ? '100%' : 'auto'}}>
                         {hasActiveFilters && (<button onClick={clearAllFilters} style={{display:'flex', alignItems:'center', gap:'4px', border:'none', background:'#fee2e2', color:'#ef4444', borderRadius:'8px', padding:'0 10px', height:'34px', cursor:'pointer', fontSize:'12px', fontWeight:'bold'}}><RotateCcw size={12} /> Clear</button>)}
-                        <select value={filterType} onChange={(e) => setFilterType(e.target.value)} style={{padding: '8px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px', cursor:'pointer', backgroundColor:'white', height:'34px'}}><option value="All">All Types</option><option value="Mantis">Mantis</option><option value="Cricket">Cricket</option></select>
-                        <input type="date" value={filterDate} onChange={(e) => setFilterDate(e.target.value)} style={{padding: '8px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px', backgroundColor:'white', height:'34px', boxSizing:'border-box'}} />
-                        <div style={{position:'relative'}}><Search size={16} style={{position:'absolute', left:'10px', top:'9px', opacity:0.4}} /><input style={{...styles.input, width: '200px', backgroundColor: 'white', paddingLeft:'32px', height:'34px'}} placeholder="Search..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} /></div>
+                        <select value={filterType} onChange={(e) => setFilterType(e.target.value)} style={{padding: '8px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px', cursor:'pointer', backgroundColor:'white', height:'34px', flex: isMobile ? 1 : 'unset'}}><option value="All">All Types</option><option value="Mantis">Mantis</option><option value="Cricket">Cricket</option></select>
+                        <input type="date" value={filterDate} onChange={(e) => setFilterDate(e.target.value)} style={{padding: '8px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px', backgroundColor:'white', height:'34px', boxSizing:'border-box', flex: isMobile ? 1 : 'unset'}} />
+                        <div style={{position:'relative', width: isMobile ? '100%' : 'auto'}}><Search size={16} style={{position:'absolute', left:'10px', top:'9px', opacity:0.4}} /><input style={{...styles.input, width: isMobile ? '100%' : '200px', backgroundColor: 'white', paddingLeft:'32px', height:'34px'}} placeholder="Search..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} /></div>
                     </div>
                   </div>
                 </div>
@@ -550,10 +655,10 @@ export default function App() {
                       <tr>
                         <th style={styles.th} onClick={() => requestSort('date')}><div style={styles.thClickable}>Date <SortIcon column="date" /></div></th>
                         <th style={{...styles.th, width: `${colWidth}px`, position: 'relative'}}><div style={{display:'flex', justifyContent:'space-between', alignItems:'center'}}>File Name<GripVertical size={14} style={{color:'#94a3b8', marginRight:'4px'}} /></div><div onMouseDown={startResizing} style={{position:'absolute', right:0, top:0, bottom:0, width:'8px', cursor:'col-resize', zIndex:10, display:'flex', alignItems:'center', justifyContent:'center'}}><div style={{width:'2px', height:'100%', backgroundColor:'#0f172a', opacity: 0.3}} /></div></th>
-                        <th style={styles.th} onClick={() => requestSort('client')}><div style={styles.thClickable}>Type <SortIcon column="client" /></div></th>
+                        <th style={{...styles.th, display: isMobile ? 'none' : 'table-cell'}} onClick={() => requestSort('client')}><div style={styles.thClickable}>Type <SortIcon column="client" /></div></th>
                         <th style={styles.th}>Duration</th>
                         <th style={styles.th} onClick={() => requestSort('status')}><div style={styles.thClickable}>Status <SortIcon column="status" /></div></th>
-                        <th style={styles.th}>Link</th>
+                        <th style={{...styles.th, display: isMobile ? 'none' : 'table-cell'}}>Link</th>
                         <th style={{...styles.th, textAlign: 'right'}}>EDIT/DELETE</th>
                       </tr>
                     </thead>
@@ -561,7 +666,12 @@ export default function App() {
                       {sortedJobs.length > 0 ? sortedJobs.map(job => (
                         <tr key={job.id} style={{ borderBottom: '1px solid #f1f5f9', backgroundColor: job.file_name === 'Unnamed File' ? '#fee2e2' : 'white' }}>
                           <td style={styles.td}>{formatDate(job.date)}</td>
-                          <td style={{...styles.td, width: `${colWidth}px`, minWidth: `${colWidth}px`, maxWidth: `${colWidth}px`}}><div style={styles.tdWrapper} className="no-scrollbar" title={job.file_name}>{job.file_name}</div></td><td style={styles.td}>{job.client||'-'}</td><td style={{...styles.td, fontFamily: 'monospace', color:'#6366f1'}}>{formatDuration(job.total_seconds)}</td><td style={styles.td}><StatusBadge status={job.status} /></td><td style={styles.td}>{job.link && <a href={job.link} target="_blank"><ExternalLink size={12}/></a>}</td><td style={{...styles.td, textAlign: 'right'}}><button onClick={() => handleEdit(job)} style={{background:'none', border:'none', cursor:'pointer', marginRight:'8px'}}><Edit2 size={16}/></button><button onClick={() => handleDelete(job.id)} style={{background:'none', border:'none', cursor:'pointer', color:'#ef4444'}}><Trash2 size={16}/></button></td></tr>)) : (<tr><td colSpan="7" style={{padding:'24px', textAlign:'center', color:'#94a3b8'}}>No files match your filters.</td></tr>)}
+                          <td style={{...styles.td, width: `${colWidth}px`, minWidth: `${colWidth}px`, maxWidth: `${colWidth}px`}}><div style={styles.tdWrapper} className="no-scrollbar" title={job.file_name}>{job.file_name}</div></td>
+                          <td style={{...styles.td, display: isMobile ? 'none' : 'table-cell'}}>{job.client||'-'}</td>
+                          <td style={{...styles.td, fontFamily: 'monospace', color:'#6366f1'}}>{formatDuration(job.total_seconds)}</td>
+                          <td style={styles.td}><StatusBadge status={job.status} /></td>
+                          <td style={{...styles.td, display: isMobile ? 'none' : 'table-cell'}}>{job.link && <a href={job.link} target="_blank"><ExternalLink size={12}/></a>}</td>
+                          <td style={{...styles.td, textAlign: 'right'}}><button onClick={() => handleEdit(job)} style={{background:'none', border:'none', cursor:'pointer', marginRight:'8px'}}><Edit2 size={16}/></button><button onClick={() => handleDelete(job.id)} style={{background:'none', border:'none', cursor:'pointer', color:'#ef4444'}}><Trash2 size={16}/></button></td></tr>)) : (<tr><td colSpan="7" style={{padding:'24px', textAlign:'center', color:'#94a3b8'}}>No files match your filters.</td></tr>)}
                     </tbody>
                   </table>
                 </div>
