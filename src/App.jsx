@@ -62,8 +62,8 @@ const formatDate = (dateString) => {
 // --- Components ---
 
 const BillingCard = ({ label, count, hours, onEdit, onExport }) => (
-  // Gradient: #3C3D37 (Dark Olive) -> #181C14 (Black/Green)
-  <div className="billing-card" style={{ background: 'linear-gradient(135deg, #3C3D37 0%, #181C14 100%)', borderRadius: '16px', padding: '24px', color: '#ECDFCC', boxShadow: '0 10px 15px -3px rgba(60, 61, 55, 0.4)', position: 'relative' }}>
+  // Gradient: #3C3D37 -> #181C14 with a light border to pop against dark bg
+  <div className="billing-card" style={{ background: 'linear-gradient(135deg, #3C3D37 0%, #181C14 100%)', borderRadius: '16px', padding: '24px', color: '#ECDFCC', boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.5)', border: '1px solid #697565', position: 'relative' }}>
     <div style={{ position: 'absolute', top: '20px', right: '20px', display: 'flex', gap: '8px' }}>
       <button onClick={onExport} style={{ background: 'rgba(236, 223, 204, 0.1)', border: 'none', borderRadius: '50%', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#ECDFCC' }} title="Export Excel">
         <Download size={16} />
@@ -84,20 +84,19 @@ const BillingCard = ({ label, count, hours, onEdit, onExport }) => (
 );
 
 const StatCard = ({ title, value, icon: Icon, color }) => (
-  // Using #697565 (Sage) for border
-  <div className="stat-card" style={{ borderLeft: `4px solid ${color}` }}>
-    <div className="stat-content"><p className="stat-title">{title}</p><h3 className="stat-value">{value}</h3></div>
+  // Background: Cream (#ECDFCC) -> Acts as "Paper" on the dark desk
+  <div className="stat-card" style={{ borderLeft: `4px solid ${color}`, backgroundColor: '#ECDFCC' }}>
+    <div className="stat-content"><p className="stat-title" style={{color: '#3C3D37'}}>{title}</p><h3 className="stat-value" style={{color: '#181C14'}}>{value}</h3></div>
     <div className="stat-icon" style={{ color: color, backgroundColor: `${color}20` }}><Icon size={24} /></div>
   </div>
 );
 
 const StatusBadge = ({ status }) => {
-  // Palette: 
-  // #181C14 (Text), #3C3D37 (Sec), #697565 (Accent), #ECDFCC (Cream)
+  // Using palette colors for badges
   const c = { 
-    'Completed': {bg:'#697565', t:'#ECDFCC', b:'#697565'}, // Solid Sage Green
-    'In Progress': {bg:'#ECDFCC', t:'#3C3D37', b:'#3C3D37'}, // Cream with Dark Border
-    'Pending QA': {bg:'#3C3D37', t:'#ECDFCC', b:'#3C3D37'}  // Dark Olive
+    'Completed': {bg:'#697565', t:'#ECDFCC', b:'#697565'}, 
+    'In Progress': {bg:'#FFFFFF', t:'#3C3D37', b:'#3C3D37'}, 
+    'Pending QA': {bg:'#3C3D37', t:'#ECDFCC', b:'#3C3D37'} 
   }[status] || {bg:'#f3f4f6', t:'#181C14', b:'#e5e7eb'};
   
   return <span style={{ backgroundColor: c.bg, color: c.t, border: `1px solid ${c.b}`, padding: '4px 10px', borderRadius: '999px', fontSize: '11px', fontWeight: '700', textTransform: 'uppercase' }}>{status}</span>;
@@ -429,42 +428,48 @@ export default function App() {
   const sortedJobs = [...filteredJobs].sort((a, b) => { if (sortConfig.key === 'date') { return sortConfig.direction === 'asc' ? new Date(a.date) - new Date(b.date) : new Date(b.date) - new Date(a.date); } if (sortConfig.key === 'client') { const valA = (a.client || '').toLowerCase(); const valB = (b.client || '').toLowerCase(); if (valA < valB) return sortConfig.direction === 'asc' ? -1 : 1; if (valA > valB) return sortConfig.direction === 'asc' ? 1 : -1; return 0; } if (sortConfig.key === 'status') { const statusOrder = { 'In Progress': 1, 'Pending QA': 2, 'Completed': 3 }; const valA = statusOrder[a.status] || 99; const valB = statusOrder[b.status] || 99; return sortConfig.direction === 'asc' ? valA - valB : valB - valA; } return 0; });
   const chartData = jobs.reduce((acc, job) => { const d = job.date; const f = acc.find(i => i.date === d); const m = Math.floor((job.total_seconds || 0) / 60); if (f) f.minutes += m; else acc.push({ date: d, minutes: m }); return acc; }, []).sort((a, b) => new Date(a.date) - new Date(b.date)).slice(-7);
 
-  // --- UPDATED STYLES FOR THEME ---
-  // Palette:
-  // #181C14 (Black/Green) -> Sidebar Text Unselected, Primary Text
-  // #3C3D37 (Dark Olive)  -> Sidebar Active BG, Secondary Accents
-  // #697565 (Sage)        -> Borders
-  // #ECDFCC (Cream)       -> Background, Sidebar BG
+  // --- UPDATED STYLES FOR DARK MODE THEME ---
+  // Background: #181C14 (Darkest)
+  // Sidebar: #181C14 (Darkest)
+  // Sidebar Active: #3C3D37 (Dark Olive)
+  // Cards ("Paper"): #ECDFCC (Cream)
+  // Text on Cards: #181C14 (Dark)
+  // Sidebar Text: #ECDFCC (Cream)
 
   const styles = {
-    container: { fontFamily: 'Inter, sans-serif', backgroundColor: '#ECDFCC', minHeight: '100vh', display: 'flex', flexDirection: 'column' },
-    // SIDEBAR FIX: Background is now Cream (#ECDFCC) to support Dark Font (#181C14)
-    sidebar: { width: '250px', backgroundColor: '#ECDFCC', borderRight: '1px solid #697565', display: 'flex', flexDirection: 'column', position: 'fixed', height: '100%', zIndex: 50, transition: 'transform 0.3s ease', transform: isMobile && !showMobileMenu ? 'translateX(-100%)' : 'translateX(0)' },
+    container: { fontFamily: 'Inter, sans-serif', backgroundColor: '#181C14', minHeight: '100vh', display: 'flex', flexDirection: 'column' },
+    
+    // SIDEBAR: Dark Background
+    sidebar: { width: '250px', backgroundColor: '#181C14', borderRight: '1px solid #3C3D37', display: 'flex', flexDirection: 'column', position: 'fixed', height: '100%', zIndex: 50, transition: 'transform 0.3s ease', transform: isMobile && !showMobileMenu ? 'translateX(-100%)' : 'translateX(0)' },
+    
     main: { flex: 1, marginLeft: isMobile ? '0' : '250px', padding: isMobile ? '1rem' : '2rem', overflowY: 'auto' },
     
-    // NAV BUTTON FIX: Explicit Active vs Inactive styles to remove white highlight
-    navBtn: { display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 20px', width: '100%', background: 'transparent', border: 'none', color: '#181C14', cursor: 'pointer', fontSize: '14px', fontWeight: '500', transition: 'all 0.2s', margin: '4px 0', borderRadius: '0 20px 20px 0' },
-    navBtnActive: { backgroundColor: '#3C3D37', color: '#ECDFCC', fontWeight: '700' }, // Dark Active Background with Light Text
+    // NAV BUTTON: Cream Text, Dark Olive Pill for Active state
+    navBtn: { display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 20px', width: '100%', background: 'transparent', border: 'none', color: '#ECDFCC', cursor: 'pointer', fontSize: '14px', fontWeight: '500', transition: 'all 0.2s', margin: '4px 0', borderRadius: '0 20px 20px 0', opacity: 0.7 },
+    navBtnActive: { backgroundColor: '#3C3D37', color: '#ECDFCC', fontWeight: '700', opacity: 1 },
     
+    // INPUTS (Inside cream cards): Dark Text
     input: { width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid #697565', fontSize: '14px', outline: 'none', backgroundColor: '#ffffff', boxSizing:'border-box', color: '#181C14' },
     label: { display: 'block', marginBottom: '6px', fontSize: '14px', fontWeight: '600', color: '#181C14' },
-    table: { width: '100%', borderCollapse: 'collapse', backgroundColor: 'white', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)' },
+    
+    // TABLES & CARDS: Cream Background ("Paper")
+    table: { width: '100%', borderCollapse: 'collapse', backgroundColor: '#ECDFCC', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.3)' },
     th: { backgroundColor: '#3C3D37', color: '#ECDFCC', padding: '12px 16px', textAlign: 'left', fontSize: '11px', fontWeight: '800', textTransform: 'uppercase', borderBottom: '1px solid #697565' },
     thClickable: { cursor: 'pointer', userSelect: 'none', display:'flex', alignItems:'center', gap:'6px' },
-    td: { padding: '14px 16px', borderBottom: '1px solid #ECDFCC', fontSize: '14px', color: '#181C14' },
+    td: { padding: '14px 16px', borderBottom: '1px solid #697565', fontSize: '14px', color: '#181C14' },
     tdWrapper: { width: '100%', height: '100%', whiteSpace: 'nowrap', overflowX: 'auto', overflowY: 'hidden', display: 'block' },
     radioLabel: { display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', cursor: 'pointer', padding: '10px', borderRadius: '8px', border: '1px solid #697565', backgroundColor: '#ffffff', color: '#181C14' },
     radioActive: { backgroundColor: '#3C3D37', borderColor: '#181C14', color: '#ECDFCC', fontWeight: '700' },
-    primaryBtn: { backgroundColor: '#3C3D37', color: '#ECDFCC', padding: '8px 16px', borderRadius: '8px', border: 'none', fontWeight: '600', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', boxShadow: '0 2px 4px rgba(60, 61, 55, 0.3)' },
+    primaryBtn: { backgroundColor: '#3C3D37', color: '#ECDFCC', padding: '8px 16px', borderRadius: '8px', border: 'none', fontWeight: '600', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', boxShadow: '0 2px 4px rgba(0,0,0,0.3)' },
     
     timerDisplay: { fontSize: '48px', fontWeight: 'bold', fontFamily: 'monospace', color: '#181C14', textAlign: 'center', margin: '20px 0' },
     timerControls: { display: 'flex', justifyContent: 'center', gap: '20px', marginBottom: '20px' },
     controlBtn: { display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 20px', borderRadius: '8px', border: 'none', fontWeight: '600', cursor: 'pointer', fontSize: '14px' },
-    startBtn: { backgroundColor: '#3C3D37', color: '#ECDFCC' },
-    pauseBtn: { backgroundColor: '#697565', color: '#ECDFCC' },
+    startBtn: { backgroundColor: '#181C14', color: '#ECDFCC' },
+    pauseBtn: { backgroundColor: '#3C3D37', color: '#ECDFCC' },
     stopBtn: { backgroundColor: '#ef4444', color: 'white' },
     stageOption: { display: 'flex', flexDirection: 'column', padding: '15px', borderRadius: '8px', border: '2px solid #697565', flex: 1, textAlign:'center' },
-    stageActive: { borderColor: '#181C14', backgroundColor: '#ECDFCC' },
+    stageActive: { borderColor: '#181C14', backgroundColor: '#ffffff' },
     stageTitle: { fontWeight: 'bold', marginBottom: '4px', color: '#181C14' },
     stageDesc: { fontSize: '12px', color: '#3C3D37' }
   };
@@ -488,22 +493,22 @@ export default function App() {
       `}</style>
 
       {isMobile && (
-        <div style={{ padding: '16px', background: '#ECDFCC', borderBottom: '1px solid #697565', display: 'flex', alignItems: 'center', justifyContent: 'space-between', zIndex: 60 }}>
+        <div style={{ padding: '16px', background: '#181C14', borderBottom: '1px solid #3C3D37', display: 'flex', alignItems: 'center', justifyContent: 'space-between', zIndex: 60 }}>
             <div style={{display:'flex', alignItems:'center', gap:'12px'}}>
-                <button onClick={() => setShowMobileMenu(!showMobileMenu)} style={{border:'none', background:'none'}}><Menu size={24} color="#181C14"/></button>
-                <span style={{fontWeight:'bold', color:'#181C14'}}>TrackScribe</span>
+                <button onClick={() => setShowMobileMenu(!showMobileMenu)} style={{border:'none', background:'none'}}><Menu size={24} color="#ECDFCC"/></button>
+                <span style={{fontWeight:'bold', color:'#ECDFCC'}}>TrackScribe</span>
             </div>
             <button onClick={openNewEntry} style={{backgroundColor:'#3C3D37', color:'#ECDFCC', border:'none', padding:'6px 12px', borderRadius:'6px', fontSize:'12px'}}>+ Add</button>
         </div>
       )}
 
       <aside style={styles.sidebar}>
-        <div style={{ padding: '24px', borderBottom: '1px solid #697565', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div style={{ padding: '24px', borderBottom: '1px solid #3C3D37', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <h2 style={{ fontSize: '18px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '10px', margin: 0 }}>
-            <div style={{ background: '#3C3D37', width: '28px', height: '28px', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ECDFCC', fontWeight: '900' }}>T</div>
-            <span style={{color: '#181C14'}}>TrackScribe</span>
+            <div style={{ background: '#ECDFCC', width: '28px', height: '28px', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#181C14', fontWeight: '900' }}>T</div>
+            <span style={{color: '#ECDFCC'}}>TrackScribe</span>
           </h2>
-          {isMobile && <button onClick={() => setShowMobileMenu(false)} style={{background:'none', border:'none', color:'#181C14'}}><X size={20}/></button>}
+          {isMobile && <button onClick={() => setShowMobileMenu(false)} style={{background:'none', border:'none', color:'#ECDFCC'}}><X size={20}/></button>}
         </div>
         <nav style={{ padding: '20px 0', flex: 1, paddingRight: '12px' }}>
           <button onClick={() => { setView('dashboard'); setShowMobileMenu(false); }} style={{ ...styles.navBtn, ...(view === 'dashboard' ? styles.navBtnActive : {}) }}><LayoutDashboard size={18} /> Overview</button>
@@ -513,17 +518,17 @@ export default function App() {
       </aside>
       
       {isMobile && showMobileMenu && (
-        <div onClick={() => setShowMobileMenu(false)} style={{position:'fixed', inset:0, background:'rgba(24, 28, 20, 0.7)', zIndex:40}} />
+        <div onClick={() => setShowMobileMenu(false)} style={{position:'fixed', inset:0, background:'rgba(24, 28, 20, 0.8)', zIndex:40}} />
       )}
 
       <main style={styles.main}>
-        {loading ? <div style={{display:'flex', justifyContent:'center', marginTop:'50px'}}><Loader2 className="animate-spin" color="#181C14" /></div> : (
+        {loading ? <div style={{display:'flex', justifyContent:'center', marginTop:'50px'}}><Loader2 className="animate-spin" color="#ECDFCC" /></div> : (
           <>
             {view === 'dashboard' && (
               <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
                 {!isMobile && (
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-                    <h2 style={{ fontSize: '24px', fontWeight: 'bold', color: '#181C14', margin: 0 }}>Dashboard</h2>
+                    <h2 style={{ fontSize: '24px', fontWeight: 'bold', color: '#ECDFCC', margin: 0 }}>Dashboard</h2>
                     <button onClick={openNewEntry} style={styles.primaryBtn}><Plus size={16} /> Add New Entry</button>
                     </div>
                 )}
@@ -547,13 +552,13 @@ export default function App() {
                     <StatCard title="Pending Review" value={jobs.filter(j => j.status === 'Pending QA').length} icon={AlertCircle} color="#697565" />
                 </div>
 
-                <div style={{ background: 'white', padding: '24px', borderRadius: '16px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)' }}><h3 style={{ fontWeight: 'bold', marginBottom: '20px', fontSize: '14px', textTransform:'uppercase', color:'#3C3D37' }}>Weekly Output (Minutes)</h3><div style={{ height: '250px' }}><ResponsiveContainer width="100%" height="100%"><BarChart data={chartData}><CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" /><XAxis dataKey="date" axisLine={false} tickLine={false} tickFormatter={(str) => new Date(str).toLocaleDateString(undefined, {weekday: 'short'})} /><YAxis axisLine={false} tickLine={false} /><Tooltip cursor={{fill: 'transparent'}} /><Bar dataKey="minutes" fill="#181C14" radius={[4, 4, 4, 4]} barSize={32} /></BarChart></ResponsiveContainer></div></div>
+                <div style={{ background: '#ECDFCC', padding: '24px', borderRadius: '16px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.2)' }}><h3 style={{ fontWeight: 'bold', marginBottom: '20px', fontSize: '14px', textTransform:'uppercase', color:'#3C3D37' }}>Weekly Output (Minutes)</h3><div style={{ height: '250px' }}><ResponsiveContainer width="100%" height="100%"><BarChart data={chartData}><CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#697565" /><XAxis dataKey="date" axisLine={false} tickLine={false} tickFormatter={(str) => new Date(str).toLocaleDateString(undefined, {weekday: 'short'})} /><YAxis axisLine={false} tickLine={false} /><Tooltip cursor={{fill: 'transparent'}} /><Bar dataKey="minutes" fill="#181C14" radius={[4, 4, 4, 4]} barSize={32} /></BarChart></ResponsiveContainer></div></div>
               </div>
             )}
 
             {showBillingModal && (
-              <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(24, 28, 20, 0.7)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 }}>
-                <div style={{ backgroundColor: 'white', borderRadius: '16px', width: '100%', maxWidth: '350px', padding: '24px' }}>
+              <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(24, 28, 20, 0.8)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 }}>
+                <div style={{ backgroundColor: '#ECDFCC', borderRadius: '16px', width: '100%', maxWidth: '350px', padding: '24px' }}>
                   <h3 style={{ margin: '0 0 16px 0', fontSize: '16px', fontWeight: 'bold', color: '#181C14' }}>Billing Settings</h3>
                   
                   <div style={{marginBottom:'12px'}}>
@@ -592,9 +597,9 @@ export default function App() {
 
             {view === 'timer' && (
               <div style={{ maxWidth: '600px', margin: '0 auto' }}>
-                <h2 style={{ fontSize: '24px', fontWeight: 'bold', color: '#181C14', marginBottom: '24px' }}>TAT Timer</h2>
+                <h2 style={{ fontSize: '24px', fontWeight: 'bold', color: '#ECDFCC', marginBottom: '24px' }}>TAT Timer</h2>
                 
-                <div style={{ backgroundColor: 'white', padding: '24px', borderRadius: '16px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)' }}>
+                <div style={{ backgroundColor: '#ECDFCC', padding: '24px', borderRadius: '16px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.2)' }}>
                   
                   <div style={{display:'flex', gap:'10px', marginBottom:'24px'}}>
                     <div style={{...styles.stageOption, ...(timerStage === 'FR' ? styles.stageActive : {})}}>
@@ -682,8 +687,8 @@ export default function App() {
 
             {showEntryModal && (
               <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(24, 28, 20, 0.7)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 }}>
-                <div style={{ backgroundColor: 'white', borderRadius: '16px', width: '100%', maxWidth: '480px', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)' }}>
-                  <div style={{ padding: '16px 24px', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div style={{ backgroundColor: '#ECDFCC', borderRadius: '16px', width: '100%', maxWidth: '480px', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)' }}>
+                  <div style={{ padding: '16px 24px', borderBottom: '1px solid #3C3D37', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <h2 style={{ margin: 0, fontSize: '16px', fontWeight: 'bold', color: '#181C14' }}>{isEditing ? 'Edit Entry' : 'New Entry'}</h2>
                     <button onClick={() => setShowEntryModal(false)} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: '#3C3D37' }}><X size={20}/></button>
                   </div>
@@ -719,7 +724,7 @@ export default function App() {
             {view === 'list' && (
               <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
                 <div style={{ display: 'flex', flexWrap:'wrap', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', gap:'10px' }}>
-                  {!isMobile && <div style={{display:'flex', alignItems:'center', gap:'16px'}}><h2 style={{ fontSize: '24px', fontWeight: 'bold', color: '#181C14', margin: '0' }}>File History</h2><button onClick={openNewEntry} style={styles.primaryBtn}><Plus size={16} /> Add New</button></div>}
+                  {!isMobile && <div style={{display:'flex', alignItems:'center', gap:'16px'}}><h2 style={{ fontSize: '24px', fontWeight: 'bold', color: '#ECDFCC', margin: '0' }}>File History</h2><button onClick={openNewEntry} style={styles.primaryBtn}><Plus size={16} /> Add New</button></div>}
                   <div style={{ display: 'flex', flexDirection:'column', alignItems: 'flex-end', gap: '8px', width: isMobile ? '100%' : 'auto' }}>
                     <div style={{ background: '#697565', color: '#ECDFCC', padding: '8px 12px', borderRadius: '8px', fontWeight: '700', fontSize: '13px', border:'1px solid #3C3D37', display:'flex', gap:'8px', width: isMobile ? '100%' : 'auto', justifyContent: isMobile ? 'center' : 'flex-start' }}><span>Total: {formatDecimalHours(listTotalSeconds)}</span><span style={{opacity:0.6}}>|</span><span>{formatDuration(listTotalSeconds)}</span></div>
                     <div style={{display:'flex', gap:'8px', alignItems:'center', flexWrap: 'wrap', width: isMobile ? '100%' : 'auto'}}>
