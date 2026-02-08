@@ -116,7 +116,7 @@ export default function App() {
 
   // --- TIMER LOGIC STATE ---
   const [timerData, setTimerData] = useState({
-    // Removed file_name from state initialization for timer
+    file_name: '', // Added back to state
     client: 'Mantis', durationString: '', link: ''
   });
   const [timerStage, setTimerStage] = useState('FR'); // 'FR' -> 'SV'
@@ -207,7 +207,7 @@ export default function App() {
     setTimerRunning(!timerRunning);
   };
 
-  // STEP 1: FINISH FR (Create "Unnamed File" -> Move to SV)
+  // STEP 1: FINISH FR
   const handleFinishFR = async () => {
     if (totalTat === 0) return;
     setTimerRunning(false);
@@ -221,8 +221,11 @@ export default function App() {
     const m = Math.floor((audioSeconds % 3600) / 60);
     const s = audioSeconds % 60;
 
+    // USE INPUT NAME OR DEFAULT TO 'Unnamed File'
+    const finalName = timerData.file_name.trim() || 'Unnamed File';
+
     const payload = { 
-      file_name: 'Unnamed File', // <--- AUTOMATICALLY NAMED
+      file_name: finalName, 
       client: timerData.client, 
       hours: h, minutes: m, seconds: s, 
       date: new Date().toISOString().split('T')[0], 
@@ -265,7 +268,7 @@ export default function App() {
         alert("Error updating: " + error.message);
     } else {
         await fetchJobs();
-        setTimerData({ client: 'Mantis', durationString: '', link: '' });
+        setTimerData({ file_name: '', client: 'Mantis', durationString: '', link: '' }); // Reset fields
         setTimerStage('FR');
         setActiveJobId(null);
         setTimeLeft(0);
@@ -403,12 +406,16 @@ export default function App() {
 
                   {/* FORM FIELDS (Disabled during SV stage to prevent changing core file info) */}
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
-                    {/* FILE NAME REMOVED - REPLACED WITH STATIC NOTICE */}
+                    {/* OPTIONAL FILE NAME INPUT */}
                     <div>
-                      <label style={styles.label}>File Name</label>
-                      <div style={{padding:'10px 14px', borderRadius:'8px', border:'1px dashed #cbd5e1', backgroundColor:'#f8fafc', color:'#64748b', fontSize:'13px'}}>
-                        File will be saved as <strong>'Unnamed File'</strong> (Edit later)
-                      </div>
+                      <label style={styles.label}>File Name (Optional)</label>
+                      <input 
+                        style={styles.input} 
+                        placeholder="Unnamed File (Edit later)" 
+                        value={timerData.file_name} 
+                        onChange={e => setTimerData({...timerData, file_name: e.target.value})} 
+                        disabled={timerRunning || timerStage === 'SV'} 
+                      />
                     </div>
                     <div>
                         <label style={styles.label}>Audio Duration (HH:MM:SS)</label>
