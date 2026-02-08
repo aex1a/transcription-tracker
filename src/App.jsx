@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from './supabase'; 
+import { Analytics } from "@vercel/analytics/react"; // <--- CORRECT IMPORT FOR REACT/VITE
 import { 
   LayoutDashboard, Plus, List, 
   Trash2, Edit2, ExternalLink, Search, 
@@ -312,6 +313,10 @@ export default function App() {
           </>
         )}
       </main>
+      
+      {/* Vercel Analytics Component */}
+      <Analytics />
+
       <style>{`
         .stat-card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); display: flex; align-items: center; justify-content: space-between; transition: transform 0.2s; }
         .stat-card:hover { transform: translateY(-2px); }
