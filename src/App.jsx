@@ -3,20 +3,18 @@ import { supabase } from './supabase';
 import { 
   LayoutDashboard, Plus, List, 
   Trash2, Edit2, ExternalLink, Search, 
-  CheckCircle2, Clock, AlertCircle, Loader2, X, CalendarDays
+  CheckCircle2, Clock, AlertCircle, Loader2, X, CalendarDays, Settings
 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 
 // --- Utility Functions ---
 
-// Convert seconds to "1.58" decimal format
 const formatDecimalHours = (totalSeconds) => {
   if (!totalSeconds) return '0.00';
   const hours = totalSeconds / 3600;
-  return hours.toFixed(2); // Returns string like "1.58"
+  return hours.toFixed(2);
 };
 
-// Standard HH:MM:SS format for the table
 const formatDuration = (totalSeconds) => {
   if (!totalSeconds) return '0s';
   const h = Math.floor(totalSeconds / 3600);
@@ -33,44 +31,24 @@ const formatDate = (dateString) => {
   });
 };
 
-// Get current billing cycle (13th to 12th)
-const getBillingCycle = () => {
-  const today = new Date();
-  const currentDay = today.getDate();
-  const currentMonth = today.getMonth();
-  const currentYear = today.getFullYear();
-
-  let start, end;
-
-  if (currentDay >= 13) {
-    // Current cycle started this month on the 13th
-    start = new Date(currentYear, currentMonth, 13);
-    end = new Date(currentYear, currentMonth + 1, 12);
-  } else {
-    // Current cycle started last month on the 13th
-    start = new Date(currentYear, currentMonth - 1, 13);
-    end = new Date(currentYear, currentMonth, 12);
-  }
-  
-  // Format dates for display
-  const options = { month: 'short', day: 'numeric' };
-  return {
-    start: start,
-    end: end,
-    label: `${start.toLocaleDateString('en-US', options)} - ${end.toLocaleDateString('en-US', options)}`
-  };
-};
-
 // --- Components ---
 
-const BillingCard = ({ label, count, hours }) => (
-  <div style={{ background: 'linear-gradient(135deg, #4f46e5 0%, #312e81 100%)', borderRadius: '16px', padding: '24px', color: 'white', boxShadow: '0 10px 15px -3px rgba(79, 70, 229, 0.3)' }}>
+const BillingCard = ({ label, count, hours, onEdit }) => (
+  <div style={{ background: 'linear-gradient(135deg, #4f46e5 0%, #312e81 100%)', borderRadius: '16px', padding: '24px', color: 'white', boxShadow: '0 10px 15px -3px rgba(79, 70, 229, 0.3)', position: 'relative' }}>
+    <button 
+      onClick={onEdit}
+      style={{ position: 'absolute', top: '20px', right: '20px', background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: '50%', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'white' }}
+      title="Edit Billing Cycle"
+    >
+      <Settings size={16} />
+    </button>
+
     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '16px' }}>
       <div>
         <p style={{ fontSize: '13px', fontWeight: '600', opacity: 0.9, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Current Billing Cycle</p>
-        <p style={{ fontSize: '12px', opacity: 0.7, marginTop: '4px' }}>{label}</p>
+        <p style={{ fontSize: '14px', fontWeight: 'bold', marginTop: '4px', color: '#e0e7ff' }}>{label}</p>
       </div>
-      <CalendarDays size={24} style={{ opacity: 0.8 }} />
+      <CalendarDays size={24} style={{ opacity: 0.8, marginRight: '40px' }} />
     </div>
     
     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
@@ -122,6 +100,11 @@ export default function App() {
   const [view, setView] = useState('dashboard');
   const [searchTerm, setSearchTerm] = useState('');
   
+  // Billing Settings State (Default to 13th)
+  const [billingStartDay, setBillingStartDay] = useState(() => parseInt(localStorage.getItem('billingStart') || '13'));
+  const [showBillingModal, setShowBillingModal] = useState(false);
+  const [tempBillingDay, setTempBillingDay] = useState(billingStartDay);
+
   const [formData, setFormData] = useState({
     file_name: '', client: '', timeString: '', 
     date: new Date().toISOString().split('T')[0], 
@@ -136,22 +119,21 @@ export default function App() {
     main: { flex: 1, marginLeft: '250px', padding: '2rem', overflowY: 'auto' },
     navBtn: { display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 20px', width: '100%', background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', fontSize: '14px', fontWeight: '500', transition: 'all 0.2s' },
     navBtnActive: { backgroundColor: '#1e293b', color: 'white', borderRight: '3px solid #6366f1' },
-    
-    // Modal
     overlay: { position: 'fixed', inset: 0, backgroundColor: 'rgba(15, 23, 42, 0.7)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 },
     modal: { backgroundColor: 'white', borderRadius: '16px', width: '100%', maxWidth: '480px', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)', overflow: 'hidden', animation: 'fadeIn 0.2s ease-out' },
-    
-    // Inputs
     label: { display: 'block', fontSize: '12px', fontWeight: '600', color: '#64748b', marginBottom: '6px', textTransform: 'uppercase' },
     input: { width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '14px', outline: 'none', transition: 'border 0.2s', backgroundColor: '#f8fafc' },
-    
-    // Table
     table: { width: '100%', borderCollapse: 'collapse', backgroundColor: 'white', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' },
     th: { backgroundColor: '#f8fafc', color: '#475569', padding: '12px 16px', textAlign: 'left', fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', borderBottom: '1px solid #e2e8f0' },
     td: { padding: '14px 16px', borderBottom: '1px solid #f1f5f9', fontSize: '14px', color: '#334155' }
   };
 
   useEffect(() => { fetchJobs(); }, []);
+
+  // Save billing preference
+  useEffect(() => {
+    localStorage.setItem('billingStart', billingStartDay);
+  }, [billingStartDay]);
 
   const fetchJobs = async () => {
     setLoading(true);
@@ -208,9 +190,35 @@ export default function App() {
   const handleTimeChange = (e) => setFormData({...formData, timeString: e.target.value.replace(/[^0-9:]/g, '')});
 
   // --- CALCULATIONS ---
+  
+  // Dynamic Billing Cycle Logic
+  const getBillingCycle = () => {
+    const today = new Date();
+    const currentDay = today.getDate();
+    const currentMonth = today.getMonth();
+    const currentYear = today.getFullYear();
+    const startDay = billingStartDay;
+
+    let start, end;
+
+    if (currentDay >= startDay) {
+      start = new Date(currentYear, currentMonth, startDay);
+      end = new Date(currentYear, currentMonth + 1, startDay - 1);
+    } else {
+      start = new Date(currentYear, currentMonth - 1, startDay);
+      end = new Date(currentYear, currentMonth, startDay - 1);
+    }
+    
+    const options = { month: 'short', day: 'numeric' };
+    return {
+      start: start,
+      end: end,
+      label: `${start.toLocaleDateString('en-US', options)} - ${end.toLocaleDateString('en-US', options)}`
+    };
+  };
+
   const billingCycle = getBillingCycle();
   
-  // Filter jobs for CURRENT BILLING CYCLE
   const cycleJobs = jobs.filter(job => {
     const jobDate = new Date(job.date);
     return jobDate >= billingCycle.start && jobDate <= billingCycle.end && job.status === 'Completed';
@@ -219,11 +227,9 @@ export default function App() {
   const cycleFiles = cycleJobs.length;
   const cycleSeconds = cycleJobs.reduce((acc, curr) => acc + (curr.total_seconds || 0), 0);
   
-  // Lifetime Stats
   const lifetimeFiles = jobs.filter(j => j.status === 'Completed').length;
   const pendingFiles = jobs.filter(j => j.status === 'Pending QA').length;
 
-  // Chart Data
   const chartData = jobs.reduce((acc, job) => {
     const date = job.date;
     const found = acc.find(item => item.date === date);
@@ -274,12 +280,13 @@ export default function App() {
               <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
                 <h2 style={{ fontSize: '24px', fontWeight: 'bold', marginBottom: '24px', color: '#0f172a' }}>Dashboard</h2>
                 
-                {/* --- NEW BILLING CYCLE CARD --- */}
+                {/* BILLING CARD with Edit Button */}
                 <div style={{ marginBottom: '30px' }}>
                   <BillingCard 
                     label={billingCycle.label} 
                     count={cycleFiles} 
                     hours={formatDecimalHours(cycleSeconds)} 
+                    onEdit={() => { setTempBillingDay(billingStartDay); setShowBillingModal(true); }}
                   />
                 </div>
 
@@ -305,6 +312,38 @@ export default function App() {
               </div>
             )}
 
+            {/* --- BILLING EDIT MODAL --- */}
+            {showBillingModal && (
+              <div style={styles.overlay}>
+                <div style={{...styles.modal, maxWidth: '350px'}}>
+                  <div style={{ padding: '20px', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 'bold' }}>Billing Settings</h3>
+                    <button onClick={() => setShowBillingModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer' }}><X size={18} /></button>
+                  </div>
+                  <div style={{ padding: '24px' }}>
+                    <label style={styles.label}>Start Day of Billing Cycle</label>
+                    <input 
+                      type="number" 
+                      min="1" max="31" 
+                      value={tempBillingDay} 
+                      onChange={(e) => setTempBillingDay(parseInt(e.target.value))}
+                      style={styles.input} 
+                    />
+                    <p style={{ fontSize: '12px', color: '#64748b', marginTop: '8px', lineHeight: '1.4' }}>
+                      If you select <strong>13</strong>, your cycle will run from the 13th of one month to the 12th of the next.
+                    </p>
+                    <button 
+                      onClick={() => { setBillingStartDay(tempBillingDay); setShowBillingModal(false); }}
+                      style={{ width: '100%', marginTop: '20px', padding: '10px', background: '#4f46e5', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}
+                    >
+                      Save Changes
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* --- ENTRY MODAL --- */}
             {view === 'add' && (
               <div style={styles.overlay}>
                 <div style={styles.modal}>
@@ -318,12 +357,10 @@ export default function App() {
                       <label style={styles.label}>File Name</label>
                       <input required style={styles.input} placeholder="e.g. Meeting_Audio_01" value={formData.file_name} onChange={e => setFormData({...formData, file_name: e.target.value})} />
                     </div>
-
                     <div style={{ marginBottom: '16px' }}>
                       <label style={styles.label}>Client Name</label>
                       <input style={styles.input} placeholder="Optional" value={formData.client} onChange={e => setFormData({...formData, client: e.target.value})} />
                     </div>
-
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
                       <div>
                         <label style={styles.label}>Duration (HH:MM:SS)</label>
@@ -334,12 +371,10 @@ export default function App() {
                          <input type="date" style={styles.input} value={formData.date} onChange={e => setFormData({...formData, date: e.target.value})} />
                       </div>
                     </div>
-
                     <div style={{ marginBottom: '16px' }}>
                       <label style={styles.label}>Link / URL</label>
                       <input type="url" style={styles.input} placeholder="https://..." value={formData.link} onChange={e => setFormData({...formData, link: e.target.value})} />
                     </div>
-
                     <div style={{ marginBottom: '24px' }}>
                       <label style={styles.label}>Status</label>
                       <select style={styles.input} value={formData.status} onChange={e => setFormData({...formData, status: e.target.value})}>
@@ -348,7 +383,6 @@ export default function App() {
                         <option>Completed</option>
                       </select>
                     </div>
-
                     <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
                       <button type="button" onClick={() => setView('dashboard')} style={{ padding: '10px 16px', border: 'none', background: 'transparent', color: '#64748b', fontWeight: '600', cursor: 'pointer' }}>Cancel</button>
                       <button type="submit" style={{ padding: '10px 20px', border: 'none', background: '#4f46e5', color: 'white', borderRadius: '8px', fontWeight: '600', cursor: 'pointer', boxShadow: '0 4px 6px -1px rgba(79, 70, 229, 0.2)' }}>{loading ? 'Saving...' : 'Save Entry'}</button>
@@ -364,7 +398,6 @@ export default function App() {
                   <h2 style={{ fontSize: '24px', fontWeight: 'bold', color: '#0f172a' }}>File History</h2>
                   <input style={{...styles.input, width: '250px', backgroundColor: 'white'}} placeholder="Search records..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
                 </div>
-                
                 <div style={{ overflowX: 'auto', borderRadius: '12px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)' }}>
                   <table style={styles.table}>
                     <thead>
