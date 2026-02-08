@@ -5,13 +5,12 @@ import {
   LayoutDashboard, Plus, List, 
   Trash2, Edit2, ExternalLink, Search, 
   CheckCircle2, Clock, AlertCircle, Loader2, X, CalendarDays, Settings,
-  ArrowUpDown, ArrowUp, ArrowDown
+  ArrowUpDown, ArrowUp, ArrowDown, Filter
 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 
 // --- Utility Functions ---
 
-// 1. GENERATE INVISIBLE ID
 const getDeviceId = () => {
   let id = localStorage.getItem('trackscribe_device_id');
   if (!id) {
@@ -21,20 +20,25 @@ const getDeviceId = () => {
   return id;
 };
 
-// Returns 3 decimal places (e.g. 0.849)
 const formatDecimalHours = (totalSeconds) => {
   if (!totalSeconds) return '0.000';
   const hours = totalSeconds / 3600;
   return hours.toFixed(3); 
 };
 
+// Formats seconds into "1h 30m 5s"
 const formatDuration = (totalSeconds) => {
   if (!totalSeconds) return '0s';
   const h = Math.floor(totalSeconds / 3600);
   const m = Math.floor((totalSeconds % 3600) / 60);
   const s = totalSeconds % 60;
-  if (h > 0) return `${h}h ${m}m ${s}s`;
-  return `${m}m ${s}s`;
+  
+  let parts = [];
+  if (h > 0) parts.push(`${h}h`);
+  if (m > 0) parts.push(`${m}m`);
+  if (s > 0 || parts.length === 0) parts.push(`${s}s`);
+  
+  return parts.join(' ');
 };
 
 const formatDate = (dateString) => {
@@ -78,38 +82,33 @@ export default function App() {
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState('dashboard');
-  const [searchTerm, setSearchTerm] = useState('');
   
-  // Sorting State
-  const [sortConfig, setSortConfig] = useState({ key: 'date', direction: 'desc' });
+  // FILTERS
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterDate, setFilterDate] = useState('');
+  const [filterType, setFilterType] = useState('All'); // All, Mantis, Cricket
 
+  const [sortConfig, setSortConfig] = useState({ key: 'date', direction: 'desc' });
+  
   const [billingStartDay, setBillingStartDay] = useState(() => parseInt(localStorage.getItem('billingStart') || '13'));
   const [showBillingModal, setShowBillingModal] = useState(false);
   const [tempBillingDay, setTempBillingDay] = useState(billingStartDay);
 
-  const [formData, setFormData] = useState({ file_name: '', client: '', timeString: '', date: new Date().toISOString().split('T')[0], link: '', notes: '', status: 'In Progress' });
+  const [formData, setFormData] = useState({ 
+    file_name: '', client: 'Mantis', timeString: '', 
+    date: new Date().toISOString().split('T')[0], 
+    link: '', notes: '', status: 'In Progress' 
+  });
   const [isEditing, setIsEditing] = useState(null);
 
   // --- Data Fetching ---
-  useEffect(() => {
-    fetchJobs();
-  }, []);
-
-  // Save billing preference
-  useEffect(() => {
-    localStorage.setItem('billingStart', billingStartDay);
-  }, [billingStartDay]);
+  useEffect(() => { fetchJobs(); }, []);
+  useEffect(() => { localStorage.setItem('billingStart', billingStartDay); }, [billingStartDay]);
 
   const fetchJobs = async () => {
     setLoading(true);
     const deviceId = getDeviceId(); 
-
-    let { data, error } = await supabase
-      .from('jobs')
-      .select('*')
-      .eq('user_id', deviceId) 
-      .order('created_at', { ascending: false });
-
+    let { data, error } = await supabase.from('jobs').select('*').eq('user_id', deviceId).order('created_at', { ascending: false });
     if (!error) setJobs(data || []);
     setLoading(false);
   };
@@ -128,7 +127,7 @@ export default function App() {
 
     const totalSeconds = (h * 3600) + (m * 60) + s;
     const payload = { 
-      file_name: formData.file_name, client: formData.client, 
+      file_name: formData.file_name, client: formData.client, // 'client' now stores Mantis/Cricket
       hours: h, minutes: m, seconds: s, date: formData.date, 
       link: formData.link, notes: formData.notes, status: formData.status, 
       total_seconds: totalSeconds, total_minutes: Math.floor(totalSeconds / 60),
@@ -139,7 +138,7 @@ export default function App() {
     else await supabase.from('jobs').insert([payload]);
     
     await fetchJobs();
-    setFormData({ file_name: '', client: '', timeString: '', date: new Date().toISOString().split('T')[0], link: '', notes: '', status: 'In Progress' });
+    setFormData({ file_name: '', client: 'Mantis', timeString: '', date: new Date().toISOString().split('T')[0], link: '', notes: '', status: 'In Progress' });
     setIsEditing(null);
     setView('list');
   };
@@ -161,22 +160,18 @@ export default function App() {
 
   const handleTimeChange = (e) => setFormData({...formData, timeString: e.target.value.replace(/[^0-9:]/g, '')});
 
-  // --- Sorting Handler ---
+  // Sorting
   const requestSort = (key) => {
     let direction = 'asc';
-    if (sortConfig.key === key && sortConfig.direction === 'asc') {
-      direction = 'desc';
-    }
+    if (sortConfig.key === key && sortConfig.direction === 'asc') direction = 'desc';
     setSortConfig({ key, direction });
   };
-
-  // Helper to draw Sort Icons
   const SortIcon = ({ column }) => {
     if (sortConfig.key !== column) return <ArrowUpDown size={14} style={{opacity:0.3}} />;
     return sortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />;
   };
 
-  // --- Calculations & Filtering ---
+  // --- Logic & Filtering ---
   const getBillingCycle = () => {
     const today = new Date();
     const d = today.getDate(), m = today.getMonth(), y = today.getFullYear();
@@ -192,18 +187,24 @@ export default function App() {
   const cycleJobs = jobs.filter(j => { const d = new Date(j.date); return d >= cycle.start && d <= cycle.end && j.status === 'Completed'; });
   const cycleSecs = cycleJobs.reduce((acc, curr) => acc + (curr.total_seconds || 0), 0);
 
-  // Filter First
-  const filteredJobs = jobs.filter(j => j.file_name.toLowerCase().includes(searchTerm.toLowerCase()) || (j.client && j.client.toLowerCase().includes(searchTerm.toLowerCase())));
+  // --- MASTER FILTER LOGIC ---
+  const filteredJobs = jobs.filter(j => {
+    const matchesSearch = j.file_name.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    // Date Filter (If date is selected, must match exactly)
+    const matchesDate = filterDate ? j.date === filterDate : true;
+    
+    // Type Filter (If not 'All', must match Mantis or Cricket)
+    const matchesType = filterType === 'All' ? true : (j.client === filterType);
 
-  // Calculate Total Hours for the LIST VIEW based on filtered results
+    return matchesSearch && matchesDate && matchesType;
+  });
+
   const listTotalSeconds = filteredJobs.reduce((acc, job) => acc + (job.total_seconds || 0), 0);
 
-  // Sort Second
   const sortedJobs = [...filteredJobs].sort((a, b) => {
     if (sortConfig.key === 'date') {
-      const dateA = new Date(a.date);
-      const dateB = new Date(b.date);
-      return sortConfig.direction === 'asc' ? dateA - dateB : dateB - dateA;
+      return sortConfig.direction === 'asc' ? new Date(a.date) - new Date(b.date) : new Date(b.date) - new Date(a.date);
     }
     if (sortConfig.key === 'client') {
       const valA = (a.client || '').toLowerCase();
@@ -233,7 +234,9 @@ export default function App() {
     table: { width: '100%', borderCollapse: 'collapse', backgroundColor: 'white', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' },
     th: { backgroundColor: '#f8fafc', color: '#475569', padding: '12px 16px', textAlign: 'left', fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', borderBottom: '1px solid #e2e8f0' },
     thClickable: { cursor: 'pointer', userSelect: 'none', display:'flex', alignItems:'center', gap:'6px' },
-    td: { padding: '14px 16px', borderBottom: '1px solid #f1f5f9', fontSize: '14px', color: '#334155' }
+    td: { padding: '14px 16px', borderBottom: '1px solid #f1f5f9', fontSize: '14px', color: '#334155' },
+    radioLabel: { display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', cursor: 'pointer', padding: '10px', borderRadius: '8px', border: '1px solid #e2e8f0', backgroundColor: '#f8fafc' },
+    radioActive: { backgroundColor: '#e0e7ff', borderColor: '#6366f1', color: '#4338ca', fontWeight: '600' }
   };
 
   return (
@@ -292,10 +295,32 @@ export default function App() {
                       <label style={styles.label}>File Name</label>
                       <input required style={styles.input} placeholder="e.g. Meeting_Audio_01" value={formData.file_name} onChange={e => setFormData({...formData, file_name: e.target.value})} />
                     </div>
+                    
+                    {/* NEW RADIO BUTTONS FOR FILE TYPE */}
                     <div style={{ marginBottom: '16px' }}>
-                      <label style={styles.label}>File Type (Mantis/Cricket)</label>
-                      <input style={styles.input} placeholder="e.g. Mantis" value={formData.client} onChange={e => setFormData({...formData, client: e.target.value})} />
+                      <label style={styles.label}>File Type</label>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                        <div 
+                          onClick={() => setFormData({...formData, client: 'Mantis'})} 
+                          style={{...styles.radioLabel, ...(formData.client === 'Mantis' ? styles.radioActive : {})}}
+                        >
+                          <div style={{width:'16px', height:'16px', borderRadius:'50%', border:'2px solid', borderColor: formData.client === 'Mantis' ? '#6366f1' : '#cbd5e1', display:'flex', alignItems:'center', justifyContent:'center'}}>
+                            {formData.client === 'Mantis' && <div style={{width:'8px', height:'8px', borderRadius:'50%', backgroundColor:'#6366f1'}} />}
+                          </div>
+                          Mantis
+                        </div>
+                        <div 
+                          onClick={() => setFormData({...formData, client: 'Cricket'})} 
+                          style={{...styles.radioLabel, ...(formData.client === 'Cricket' ? styles.radioActive : {})}}
+                        >
+                          <div style={{width:'16px', height:'16px', borderRadius:'50%', border:'2px solid', borderColor: formData.client === 'Cricket' ? '#6366f1' : '#cbd5e1', display:'flex', alignItems:'center', justifyContent:'center'}}>
+                            {formData.client === 'Cricket' && <div style={{width:'8px', height:'8px', borderRadius:'50%', backgroundColor:'#6366f1'}} />}
+                          </div>
+                          Cricket
+                        </div>
+                      </div>
                     </div>
+
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
                       <div>
                         <label style={styles.label}>Duration (HH:MM:SS)</label>
@@ -342,16 +367,52 @@ export default function App() {
             
             {view === 'list' && (
               <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
-                {/* Header Row */}
-                <div style={{ display: 'flex', flexWrap:'wrap', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', gap:'10px' }}>
-                  <h2 style={{ fontSize: '24px', fontWeight: 'bold', color: '#0f172a' }}>File History</h2>
+                <div style={{ display: 'flex', flexWrap:'wrap', justifyContent: 'space-between', alignItems: 'end', marginBottom: '20px', gap:'10px' }}>
                   
-                  {/* SEARCH + TOTAL HOURS BADGE */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    <div style={{ background: '#e0e7ff', color: '#4338ca', padding: '8px 12px', borderRadius: '8px', fontWeight: '700', fontSize: '13px', border:'1px solid #c7d2fe' }}>
-                      Total List Hours: {formatDecimalHours(listTotalSeconds)}
+                  {/* FILTERS SECTION */}
+                  <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-end', flexWrap: 'wrap' }}>
+                    <div>
+                      <h2 style={{ fontSize: '24px', fontWeight: 'bold', color: '#0f172a', margin: '0 0 10px 0' }}>File History</h2>
+                      <div style={{display:'flex', gap:'8px'}}>
+                        {/* Filter Type */}
+                        <div style={{position:'relative'}}>
+                          <select 
+                            value={filterType} 
+                            onChange={(e) => setFilterType(e.target.value)}
+                            style={{padding: '8px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px', outline: 'none', cursor:'pointer', appearance:'none', paddingRight:'30px', backgroundColor:'white'}}
+                          >
+                            <option value="All">All Types</option>
+                            <option value="Mantis">Mantis Only</option>
+                            <option value="Cricket">Cricket Only</option>
+                          </select>
+                          <Filter size={14} style={{position:'absolute', right:'10px', top:'10px', pointerEvents:'none', opacity:0.5}} />
+                        </div>
+
+                        {/* Filter Date */}
+                        <input 
+                          type="date" 
+                          value={filterDate} 
+                          onChange={(e) => setFilterDate(e.target.value)}
+                          style={{padding: '8px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px', outline: 'none', backgroundColor:'white'}}
+                        />
+                        {filterDate && (
+                          <button onClick={() => setFilterDate('')} style={{border:'none', background:'#fee2e2', color:'#ef4444', borderRadius:'6px', padding:'0 8px', cursor:'pointer', fontSize:'12px', fontWeight:'bold'}}>Clear Date</button>
+                        )}
+                      </div>
                     </div>
-                    <input style={{...styles.input, width: '250px', backgroundColor: 'white'}} placeholder="Search..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+                  </div>
+
+                  {/* SEARCH + TOTAL HOURS */}
+                  <div style={{ display: 'flex', flexDirection:'column', alignItems: 'flex-end', gap: '8px' }}>
+                    <div style={{ background: '#e0e7ff', color: '#4338ca', padding: '8px 12px', borderRadius: '8px', fontWeight: '700', fontSize: '13px', border:'1px solid #c7d2fe', display:'flex', gap:'8px' }}>
+                      <span>Total: {formatDecimalHours(listTotalSeconds)}</span>
+                      <span style={{opacity:0.6}}>|</span>
+                      <span>{formatDuration(listTotalSeconds)}</span>
+                    </div>
+                    <div style={{position:'relative'}}>
+                      <Search size={16} style={{position:'absolute', left:'10px', top:'10px', opacity:0.4}} />
+                      <input style={{...styles.input, width: '250px', backgroundColor: 'white', paddingLeft:'32px'}} placeholder="Search filename..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+                    </div>
                   </div>
                 </div>
 
@@ -364,7 +425,7 @@ export default function App() {
                         </th>
                         <th style={styles.th}>File Name</th>
                         <th style={styles.th} onClick={() => requestSort('client')}>
-                          <div style={styles.thClickable}>File Type <SortIcon column="client" /></div>
+                          <div style={styles.thClickable}>Type <SortIcon column="client" /></div>
                         </th>
                         <th style={styles.th}>Duration</th>
                         <th style={styles.th}>Status</th>
@@ -373,7 +434,7 @@ export default function App() {
                       </tr>
                     </thead>
                     <tbody>
-                      {sortedJobs.map(job => (
+                      {sortedJobs.length > 0 ? sortedJobs.map(job => (
                         <tr key={job.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
                           <td style={styles.td}>{formatDate(job.date)}</td>
                           <td style={{...styles.td, fontWeight: '600'}}>{job.file_name}</td>
@@ -386,7 +447,9 @@ export default function App() {
                             <button onClick={() => handleDelete(job.id)} style={{background:'none', border:'none', cursor:'pointer', color:'#ef4444'}}><Trash2 size={16}/></button>
                           </td>
                         </tr>
-                      ))}
+                      )) : (
+                        <tr><td colSpan="7" style={{padding:'24px', textAlign:'center', color:'#94a3b8'}}>No files match your filters.</td></tr>
+                      )}
                     </tbody>
                   </table>
                 </div>
@@ -396,9 +459,7 @@ export default function App() {
         )}
       </main>
       
-      {/* Vercel Analytics Component */}
       <Analytics />
-
       <style>{`
         .stat-card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); display: flex; align-items: center; justify-content: space-between; transition: transform 0.2s; }
         .stat-card:hover { transform: translateY(-2px); }
