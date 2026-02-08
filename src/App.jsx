@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from './supabase'; 
 import { Analytics } from "@vercel/analytics/react"; 
+import * as XLSX from 'xlsx'; // Requires: npm install xlsx
 import { 
   LayoutDashboard, Plus, List, Timer, 
   Trash2, Edit2, ExternalLink, Search, 
@@ -63,7 +64,7 @@ const formatDate = (dateString) => {
 const BillingCard = ({ label, count, hours, onEdit, onExport }) => (
   <div className="billing-card" style={{ background: 'linear-gradient(135deg, #4f46e5 0%, #312e81 100%)', borderRadius: '16px', padding: '24px', color: 'white', boxShadow: '0 10px 15px -3px rgba(79, 70, 229, 0.3)', position: 'relative' }}>
     <div style={{ position: 'absolute', top: '20px', right: '20px', display: 'flex', gap: '8px' }}>
-      <button onClick={onExport} style={{ background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: '50%', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'white' }} title="Export CSV">
+      <button onClick={onExport} style={{ background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: '50%', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'white' }} title="Export Excel">
         <Download size={16} />
       </button>
       <button onClick={onEdit} style={{ background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: '50%', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'white' }} title="Edit Billing Cycle">
@@ -240,15 +241,14 @@ export default function App() {
     return `Unnamed File ${maxNum + 1}`;
   };
 
-  // --- EXPORT CSV LOGIC ---
-  const downloadBillingCSV = () => {
+  // --- EXPORT EXCEL LOGIC ---
+  const downloadBillingXLSX = () => {
     const cycle = getBillingCycle();
     const cycleJobs = jobs.filter(j => { 
         const d = new Date(j.date); 
         d.setHours(0,0,0,0);
         const s = new Date(cycle.start); s.setHours(0,0,0,0);
         const e = new Date(cycle.end); e.setHours(23,59,59,999);
-        // Assuming we only want completed jobs for billing, but you can remove the status check if you want ALL files in that date range
         return d >= s && d <= e; 
     });
 
@@ -257,31 +257,44 @@ export default function App() {
         return;
     }
 
-    const headers = ["Date", "File Name", "Client", "Duration", "Status", "Link", "Notes"];
-    
-    const rows = cycleJobs.map(job => [
-        job.date,
-        `"${job.file_name.replace(/"/g, '""')}"`, // Escape quotes in CSV
-        job.client,
-        formatDuration(job.total_seconds),
-        job.status,
-        job.link || "",
-        `"${(job.notes || "").replace(/"/g, '""')}"`
-    ]);
+    // 1. Prepare Data with Decimal Column
+    const exportData = cycleJobs.map(job => ({
+        "Date": job.date,
+        "File Name": job.file_name,
+        "Client": job.client,
+        "Duration": formatDuration(job.total_seconds),
+        "Total Hours (Decimal)": parseFloat((job.total_seconds / 3600).toFixed(4)), // NEW COLUMN
+        "Status": job.status,
+        "Link": job.link || "",
+        "Notes": job.notes || ""
+    }));
 
-    const csvContent = [
-        headers.join(","),
-        ...rows.map(row => row.join(","))
-    ].join("\n");
+    // 2. Create Worksheet
+    const ws = XLSX.utils.json_to_sheet(exportData);
 
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.setAttribute("href", url);
-    link.setAttribute("download", `Billing_Cycle_${cycle.start.toISOString().split('T')[0]}_to_${cycle.end.toISOString().split('T')[0]}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    // 3. Auto-space Columns (Calculate Max Width)
+    const colWidths = [];
+    // Get headers
+    const headers = Object.keys(exportData[0]);
+    headers.forEach((key, i) => {
+        let maxLen = key.length;
+        exportData.forEach(row => {
+            if (row[key]) {
+                const len = row[key].toString().length;
+                if (len > maxLen) maxLen = len;
+            }
+        });
+        colWidths[i] = { wch: maxLen + 5 }; // +5 buffer space
+    });
+    ws['!cols'] = colWidths;
+
+    // 4. Create Workbook & Append
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Billing Cycle");
+
+    // 5. Download File
+    const fileName = `Billing_${cycle.start.toISOString().split('T')[0]}_to_${cycle.end.toISOString().split('T')[0]}.xlsx`;
+    XLSX.writeFile(wb, fileName);
   };
 
   // --- TIMER ACTION HANDLERS ---
@@ -521,7 +534,7 @@ export default function App() {
                         count={cycleJobs.length} 
                         hours={formatDecimalHours(cycleSecs)} 
                         onEdit={() => { setTempBillingDate(billingStartDate); setShowBillingModal(true); }} 
-                        onExport={downloadBillingCSV}
+                        onExport={downloadBillingXLSX}
                     />
                 </div>
                 
