@@ -8,11 +8,14 @@ import {
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 
 // --- Utility Functions ---
-const formatDuration = (minutes) => {
-  const h = Math.floor(minutes / 60);
-  const m = minutes % 60;
-  if (h === 0) return `${m}m`;
-  return `${h}h ${m}m`;
+const formatDuration = (totalSeconds) => {
+  if (!totalSeconds) return '0m 0s';
+  const h = Math.floor(totalSeconds / 3600);
+  const m = Math.floor((totalSeconds % 3600) / 60);
+  const s = totalSeconds % 60;
+  
+  if (h > 0) return `${h}h ${m}m ${s}s`;
+  return `${m}m ${s}s`;
 };
 
 const formatDate = (dateString) => {
@@ -66,31 +69,23 @@ export default function App() {
   });
   const [isEditing, setIsEditing] = useState(null);
 
-  // --- Styles Object (CSS-in-JS to guarantee look) ---
+  // --- Styles Object ---
   const styles = {
     container: { fontFamily: 'Inter, system-ui, sans-serif', backgroundColor: '#f8fafc', minHeight: '100vh', display: 'flex' },
     sidebar: { width: '250px', backgroundColor: '#1e1b4b', color: 'white', display: 'flex', flexDirection: 'column', position: 'fixed', height: '100%', left: 0, top: 0 },
     main: { flex: 1, marginLeft: '250px', padding: '2rem', overflowY: 'auto' },
     navButton: { display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 20px', width: '100%', textAlign: 'left', background: 'none', border: 'none', color: '#c7d2fe', cursor: 'pointer', fontSize: '14px', transition: '0.2s' },
     navButtonActive: { backgroundColor: '#312e81', color: 'white', borderRight: '4px solid #6366f1' },
-    
-    // Modal Styles
     overlay: { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(15, 23, 42, 0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50 },
     modalBox: { backgroundColor: 'white', borderRadius: '16px', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)', width: '100%', maxWidth: '500px', overflow: 'hidden', animation: 'fadeIn 0.3s ease-out' },
     modalHeader: { backgroundColor: '#4f46e5', padding: '20px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: 'white' },
     modalBody: { padding: '24px' },
-    
-    // Form Inputs
     label: { display: 'block', fontSize: '13px', fontWeight: '600', color: '#475569', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' },
     input: { width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '15px', outline: 'none', transition: 'border 0.2s', boxSizing: 'border-box' },
     row: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' },
     formGroup: { marginBottom: '16px' },
-    
-    // Buttons
     btnPrimary: { backgroundColor: '#4f46e5', color: 'white', border: 'none', padding: '10px 20px', borderRadius: '8px', fontWeight: '600', cursor: 'pointer', boxShadow: '0 4px 6px -1px rgba(79, 70, 229, 0.2)' },
     btnSecondary: { backgroundColor: 'transparent', color: '#64748b', border: 'none', padding: '10px 20px', borderRadius: '8px', fontWeight: '600', cursor: 'pointer', marginRight: '10px' },
-    
-    // Table
     table: { width: '100%', borderCollapse: 'collapse', backgroundColor: 'white', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' },
     th: { backgroundColor: '#4f46e5', color: 'white', padding: '12px 16px', textAlign: 'left', fontSize: '12px', fontWeight: 'bold', textTransform: 'uppercase' },
     td: { padding: '14px 16px', borderBottom: '1px solid #f1f5f9', fontSize: '14px', color: '#334155' }
@@ -111,24 +106,30 @@ export default function App() {
     e.preventDefault();
     setLoading(true);
 
-    let hours = 0, minutes = 0;
-    if (formData.timeString.includes(':')) {
-      const parts = formData.timeString.split(':');
-      hours = parseInt(parts[0]) || 0;
-      minutes = parseInt(parts[1]) || 0;
+    // Parsing Logic: Handles HH:MM:SS or MM:SS
+    let h = 0, m = 0, s = 0;
+    const parts = formData.timeString.split(':').map(Number);
+    
+    if (parts.length === 3) {
+      h = parts[0] || 0; m = parts[1] || 0; s = parts[2] || 0;
+    } else if (parts.length === 2) {
+      m = parts[0] || 0; s = parts[1] || 0;
     } else {
-      minutes = parseInt(formData.timeString) || 0;
+      m = parts[0] || 0;
     }
+
+    const totalSeconds = (h * 3600) + (m * 60) + s;
 
     const payload = {
       file_name: formData.file_name,
       client: formData.client,
-      hours, minutes,
+      hours: h, minutes: m, seconds: s, // New field
       date: formData.date,
       link: formData.link,
       notes: formData.notes,
       status: formData.status,
-      total_minutes: (hours * 60) + minutes
+      total_seconds: totalSeconds, // New calculation
+      total_minutes: Math.floor(totalSeconds / 60) // Keep for backup
     };
 
     if (isEditing) await supabase.from('jobs').update(payload).eq('id', isEditing);
@@ -148,23 +149,40 @@ export default function App() {
   };
 
   const handleEdit = (job) => {
-    setFormData({ ...job, timeString: `${padTime(job.hours)}:${padTime(job.minutes)}` });
+    // Reconstruct time string properly based on what exists
+    let timeStr = '';
+    if (job.hours > 0) {
+      timeStr = `${padTime(job.hours)}:${padTime(job.minutes)}:${padTime(job.seconds || 0)}`;
+    } else {
+      timeStr = `${padTime(job.minutes)}:${padTime(job.seconds || 0)}`;
+    }
+
+    setFormData({ ...job, timeString: timeStr });
     setIsEditing(job.id);
     setView('add');
   };
 
   const handleTimeChange = (e) => {
+    // Allow digits and colons only
     setFormData({...formData, timeString: e.target.value.replace(/[^0-9:]/g, '')});
   };
 
   // Stats
   const totalFiles = jobs.filter(j => j.status === 'Completed').length;
-  const totalMinutes = jobs.reduce((acc, curr) => acc + (curr.status === 'Completed' ? curr.total_minutes : 0), 0);
+  // Summing up Total Seconds for accuracy
+  const totalSecondsAll = jobs.reduce((acc, curr) => {
+    if (curr.status !== 'Completed') return acc;
+    // Fallback to total_minutes * 60 if total_seconds is missing (old data)
+    const sec = curr.total_seconds !== undefined ? curr.total_seconds : (curr.total_minutes * 60);
+    return acc + sec;
+  }, 0);
+
   const chartData = jobs.reduce((acc, job) => {
     const date = job.date;
     const found = acc.find(item => item.date === date);
-    if (found) found.minutes += job.total_minutes;
-    else acc.push({ date, minutes: job.total_minutes });
+    const min = job.total_minutes || Math.floor((job.total_seconds || 0) / 60);
+    if (found) found.minutes += min;
+    else acc.push({ date, minutes: min });
     return acc;
   }, []).sort((a, b) => new Date(a.date) - new Date(b.date)).slice(-7);
 
@@ -220,12 +238,12 @@ export default function App() {
                 
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '20px', marginBottom: '30px' }}>
                   <StatCard title="Files Completed" value={totalFiles} icon={CheckCircle2} color="#10b981" />
-                  <StatCard title="Hours Logged" value={formatDuration(totalMinutes)} icon={Clock} color="#3b82f6" />
+                  <StatCard title="Total Audio Time" value={formatDuration(totalSecondsAll)} icon={Clock} color="#3b82f6" />
                   <StatCard title="Pending QA" value={jobs.filter(j => j.status === 'Pending QA').length} icon={AlertCircle} color="#f59e0b" />
                 </div>
 
                 <div style={{ background: 'white', padding: '20px', borderRadius: '12px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
-                   <h3 style={{ fontWeight: 'bold', marginBottom: '15px' }}>Weekly Activity</h3>
+                   <h3 style={{ fontWeight: 'bold', marginBottom: '15px' }}>Weekly Activity (Minutes)</h3>
                    <div style={{ height: '300px' }}>
                       <ResponsiveContainer width="100%" height="100%">
                         <BarChart data={chartData}>
@@ -241,7 +259,7 @@ export default function App() {
               </div>
             )}
 
-            {/* --- NEW ENTRY MODAL (Fixed Box & Alignment) --- */}
+            {/* --- NEW ENTRY MODAL --- */}
             {view === 'add' && (
               <div style={styles.overlay}>
                 <div style={styles.modalBox}>
@@ -263,8 +281,17 @@ export default function App() {
 
                     <div style={styles.row}>
                       <div style={styles.formGroup}>
-                        <label style={styles.label}>Duration (HH:MM)</label>
-                        <input style={{...styles.input, fontFamily: 'monospace'}} placeholder="00:00" maxLength={5} value={formData.timeString} onChange={handleTimeChange} />
+                        <label style={styles.label}>Duration (HH:MM:SS)</label>
+                        <input 
+                          style={{...styles.input, fontFamily: 'monospace'}} 
+                          placeholder="00:00:00" 
+                          maxLength={8} 
+                          value={formData.timeString} 
+                          onChange={handleTimeChange} 
+                        />
+                        <p style={{fontSize: '11px', color: '#64748b', marginTop: '4px'}}>
+                          Format: <strong>01:30:05</strong> (1h 30m 5s) or <strong>45:30</strong> (45m 30s)
+                        </p>
                       </div>
                       <div style={styles.formGroup}>
                          <label style={styles.label}>Date</label>
@@ -322,7 +349,9 @@ export default function App() {
                           <td style={styles.td}>{formatDate(job.date)}</td>
                           <td style={{...styles.td, fontWeight: 'bold'}}>{job.file_name}</td>
                           <td style={styles.td}>{job.client || '-'}</td>
-                          <td style={{...styles.td, fontFamily: 'monospace'}}>{formatDuration(job.total_minutes)}</td>
+                          <td style={{...styles.td, fontFamily: 'monospace'}}>
+                            {formatDuration(job.total_seconds || (job.total_minutes * 60))}
+                          </td>
                           <td style={styles.td}><StatusBadge status={job.status} /></td>
                           <td style={styles.td}>
                              {job.link && <a href={job.link} target="_blank" style={{ color: '#4f46e5', textDecoration: 'none', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '4px' }}>Open <ExternalLink size={12}/></a>}
@@ -342,7 +371,7 @@ export default function App() {
         )}
       </main>
       
-      {/* Inject Global Styles for stat cards */}
+      {/* Inject Global Styles */}
       <style>{`
         .stat-card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); display: flex; align-items: center; justify-content: space-between; }
         .stat-title { font-size: 12px; font-weight: bold; color: #64748b; text-transform: uppercase; margin-bottom: 4px; }
