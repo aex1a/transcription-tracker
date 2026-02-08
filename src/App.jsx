@@ -62,19 +62,19 @@ const formatDate = (dateString) => {
 // --- Components ---
 
 const BillingCard = ({ label, count, hours, onEdit, onExport }) => (
-  // Gradient: #3C3D37 (Secondary) -> #1E201E (Primary)
-  <div className="billing-card" style={{ background: 'linear-gradient(135deg, #3C3D37 0%, #1E201E 100%)', borderRadius: '16px', padding: '24px', color: '#ECDFCC', boxShadow: '0 10px 15px -3px rgba(30, 32, 30, 0.4)', position: 'relative' }}>
+  // Gradient: #3F4F44 (Secondary) -> #2C3930 (Primary)
+  <div className="billing-card" style={{ background: 'linear-gradient(135deg, #3F4F44 0%, #2C3930 100%)', borderRadius: '16px', padding: '24px', color: '#DCD7C9', boxShadow: '0 10px 15px -3px rgba(44, 57, 48, 0.4)', position: 'relative' }}>
     <div style={{ position: 'absolute', top: '20px', right: '20px', display: 'flex', gap: '8px' }}>
-      <button onClick={onExport} style={{ background: 'rgba(236, 223, 204, 0.1)', border: 'none', borderRadius: '50%', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#ECDFCC' }} title="Export Excel">
+      <button onClick={onExport} style={{ background: 'rgba(220, 215, 201, 0.15)', border: 'none', borderRadius: '50%', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#DCD7C9' }} title="Export Excel">
         <Download size={16} />
       </button>
-      <button onClick={onEdit} style={{ background: 'rgba(236, 223, 204, 0.1)', border: 'none', borderRadius: '50%', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#ECDFCC' }} title="Edit Billing Cycle">
+      <button onClick={onEdit} style={{ background: 'rgba(220, 215, 201, 0.15)', border: 'none', borderRadius: '50%', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#DCD7C9' }} title="Edit Billing Cycle">
         <Settings size={16} />
       </button>
     </div>
     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '16px' }}>
-      <div><p style={{ fontSize: '13px', fontWeight: '600', opacity: 0.8, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Current Billing Cycle</p><p style={{ fontSize: '14px', fontWeight: 'bold', marginTop: '4px', color: '#ECDFCC' }}>{label}</p></div>
-      <CalendarDays size={24} style={{ opacity: 0.8, marginRight: '80px', color: '#ECDFCC' }} />
+      <div><p style={{ fontSize: '13px', fontWeight: '600', opacity: 0.8, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Current Billing Cycle</p><p style={{ fontSize: '14px', fontWeight: 'bold', marginTop: '4px', color: '#DCD7C9' }}>{label}</p></div>
+      <CalendarDays size={24} style={{ opacity: 0.8, marginRight: '80px', color: '#DCD7C9' }} />
     </div>
     <div className="billing-stats-grid">
       <div><h3 style={{ fontSize: '32px', fontWeight: '800', lineHeight: '1' }}>{count}</h3><p style={{ fontSize: '13px', opacity: 0.8, marginTop: '4px' }}>Files Completed</p></div>
@@ -84,7 +84,7 @@ const BillingCard = ({ label, count, hours, onEdit, onExport }) => (
 );
 
 const StatCard = ({ title, value, icon: Icon, color }) => (
-  // Using #697565 for the border accent
+  // Using #A27B5C (Bronze) for the border accent
   <div className="stat-card" style={{ borderLeft: `4px solid ${color}` }}>
     <div className="stat-content"><p className="stat-title">{title}</p><h3 className="stat-value">{value}</h3></div>
     <div className="stat-icon" style={{ color: color, backgroundColor: `${color}20` }}><Icon size={24} /></div>
@@ -92,14 +92,14 @@ const StatCard = ({ title, value, icon: Icon, color }) => (
 );
 
 const StatusBadge = ({ status }) => {
-  // Customized status badges using the palette
-  // Completed: Sage Green text on Cream background
-  // In Progress: Dark Olive text
-  // Pending: Darkest text
+  // Palette Mapping:
+  // Completed: Dark Forest Text on Paper Background
+  // In Progress: Slate Green Text
+  // Pending: Bronze Text (Warning)
   const c = { 
-    'Completed': {bg:'#697565', t:'#ECDFCC', b:'#697565'}, 
-    'In Progress': {bg:'#ECDFCC', t:'#3C3D37', b:'#3C3D37'}, 
-    'Pending QA': {bg:'#1E201E', t:'#ECDFCC', b:'#1E201E'} 
+    'Completed': {bg:'#E0E0E0', t:'#2C3930', b:'#2C3930'}, 
+    'In Progress': {bg:'#DCD7C9', t:'#3F4F44', b:'#3F4F44'}, 
+    'Pending QA': {bg:'#EBE3D9', t:'#A27B5C', b:'#A27B5C'} 
   }[status] || {bg:'#f3f4f6', t:'#374151', b:'#e5e7eb'};
   
   return <span style={{ backgroundColor: c.bg, color: c.t, border: `1px solid ${c.b}`, padding: '4px 10px', borderRadius: '999px', fontSize: '11px', fontWeight: '700', textTransform: 'uppercase' }}>{status}</span>;
@@ -433,36 +433,36 @@ export default function App() {
 
   // --- UPDATED STYLES FOR THEME ---
   // Palette:
-  // #1E201E (Almost Black/Green) -> Primary Sidebar, Primary Btn, Text
-  // #3C3D37 (Dark Olive)         -> Secondary, Headers, Cards
-  // #697565 (Sage)               -> Borders, Accents
-  // #ECDFCC (Cream)              -> Background, Light Text
+  // #1E201E (Darkest Forest) -> Primary Sidebar, Buttons, Text
+  // #3C3D37 (Dark Olive)     -> Secondary, Headers, Gradients
+  // #697565 (Sage Green)     -> Borders, Accents
+  // #DCD7C9 (Paper/Beige)    -> Background, Light Text on Dark
 
   const styles = {
-    container: { fontFamily: 'Inter, sans-serif', backgroundColor: '#ECDFCC', minHeight: '100vh', display: 'flex', flexDirection: 'column' },
-    sidebar: { width: '250px', backgroundColor: '#1E201E', color: '#ECDFCC', display: 'flex', flexDirection: 'column', position: 'fixed', height: '100%', zIndex: 50, transition: 'transform 0.3s ease', transform: isMobile && !showMobileMenu ? 'translateX(-100%)' : 'translateX(0)' },
+    container: { fontFamily: 'Inter, sans-serif', backgroundColor: '#DCD7C9', minHeight: '100vh', display: 'flex', flexDirection: 'column' },
+    sidebar: { width: '250px', backgroundColor: '#1E201E', color: '#DCD7C9', display: 'flex', flexDirection: 'column', position: 'fixed', height: '100%', zIndex: 50, transition: 'transform 0.3s ease', transform: isMobile && !showMobileMenu ? 'translateX(-100%)' : 'translateX(0)' },
     main: { flex: 1, marginLeft: isMobile ? '0' : '250px', padding: isMobile ? '1rem' : '2rem', overflowY: 'auto' },
-    navBtn: { display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 20px', width: '100%', background: 'none', border: 'none', color: '#ECDFCC', cursor: 'pointer', fontSize: '14px', fontWeight: '500', transition: 'all 0.2s', opacity: 0.7 },
-    navBtnActive: { backgroundColor: '#3C3D37', color: '#ECDFCC', borderRight: '3px solid #697565', opacity: 1 },
+    navBtn: { display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 20px', width: '100%', background: 'none', border: 'none', color: '#DCD7C9', cursor: 'pointer', fontSize: '14px', fontWeight: '500', transition: 'all 0.2s', opacity: 0.7 },
+    navBtnActive: { backgroundColor: '#3C3D37', color: '#DCD7C9', borderRight: '3px solid #A27B5C', opacity: 1 },
     input: { width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid #697565', fontSize: '14px', outline: 'none', backgroundColor: '#ffffff', boxSizing:'border-box', color: '#1E201E' },
     label: { display: 'block', marginBottom: '6px', fontSize: '14px', fontWeight: '600', color: '#1E201E' },
-    table: { width: '100%', borderCollapse: 'collapse', backgroundColor: 'white', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' },
-    th: { backgroundColor: '#3C3D37', color: '#ECDFCC', padding: '12px 16px', textAlign: 'left', fontSize: '11px', fontWeight: '800', textTransform: 'uppercase', borderBottom: '1px solid #697565' },
+    table: { width: '100%', borderCollapse: 'collapse', backgroundColor: 'white', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 4px 6px -1px rgba(30, 32, 30, 0.1)' },
+    th: { backgroundColor: '#3F4F44', color: '#DCD7C9', padding: '12px 16px', textAlign: 'left', fontSize: '11px', fontWeight: '800', textTransform: 'uppercase', borderBottom: '1px solid #697565' },
     thClickable: { cursor: 'pointer', userSelect: 'none', display:'flex', alignItems:'center', gap:'6px' },
-    td: { padding: '14px 16px', borderBottom: '1px solid #ECDFCC', fontSize: '14px', color: '#1E201E' },
+    td: { padding: '14px 16px', borderBottom: '1px solid #DCD7C9', fontSize: '14px', color: '#1E201E' },
     tdWrapper: { width: '100%', height: '100%', whiteSpace: 'nowrap', overflowX: 'auto', overflowY: 'hidden', display: 'block' },
     radioLabel: { display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', cursor: 'pointer', padding: '10px', borderRadius: '8px', border: '1px solid #697565', backgroundColor: '#ffffff', color: '#1E201E' },
-    radioActive: { backgroundColor: '#ECDFCC', borderColor: '#3C3D37', color: '#3C3D37', fontWeight: '800' },
-    primaryBtn: { backgroundColor: '#1E201E', color: '#ECDFCC', padding: '8px 16px', borderRadius: '8px', border: 'none', fontWeight: '600', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px' },
+    radioActive: { backgroundColor: '#DCD7C9', borderColor: '#A27B5C', color: '#1E201E', fontWeight: '800' },
+    primaryBtn: { backgroundColor: '#A27B5C', color: '#FFFFFF', padding: '8px 16px', borderRadius: '8px', border: 'none', fontWeight: '600', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', boxShadow: '0 2px 4px rgba(162, 123, 92, 0.3)' },
     
     timerDisplay: { fontSize: '48px', fontWeight: 'bold', fontFamily: 'monospace', color: '#1E201E', textAlign: 'center', margin: '20px 0' },
     timerControls: { display: 'flex', justifyContent: 'center', gap: '20px', marginBottom: '20px' },
     controlBtn: { display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 20px', borderRadius: '8px', border: 'none', fontWeight: '600', cursor: 'pointer', fontSize: '14px' },
-    startBtn: { backgroundColor: '#1E201E', color: '#ECDFCC' },
-    pauseBtn: { backgroundColor: '#3C3D37', color: '#ECDFCC' },
+    startBtn: { backgroundColor: '#1E201E', color: '#DCD7C9' },
+    pauseBtn: { backgroundColor: '#A27B5C', color: '#FFFFFF' },
     stopBtn: { backgroundColor: '#ef4444', color: 'white' },
     stageOption: { display: 'flex', flexDirection: 'column', padding: '15px', borderRadius: '8px', border: '2px solid #697565', flex: 1, textAlign:'center' },
-    stageActive: { borderColor: '#1E201E', backgroundColor: '#ECDFCC' },
+    stageActive: { borderColor: '#A27B5C', backgroundColor: '#DCD7C9' },
     stageTitle: { fontWeight: 'bold', marginBottom: '4px', color: '#1E201E' },
     stageDesc: { fontSize: '12px', color: '#3C3D37' }
   };
@@ -474,10 +474,10 @@ export default function App() {
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; } 
         .dashboard-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 30px; }
         .billing-stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-        .billing-separator { border-left: 1px solid rgba(236, 223, 204, 0.3); padding-left: 20px; }
+        .billing-separator { border-left: 1px solid rgba(220, 215, 201, 0.3); padding-left: 20px; }
         @media (max-width: 768px) {
             .billing-stats-grid { grid-template-columns: 1fr; gap: 10px; }
-            .billing-separator { border-left: none; padding-left: 0; padding-top: 10px; border-top: 1px solid rgba(236, 223, 204, 0.3); }
+            .billing-separator { border-left: none; padding-left: 0; padding-top: 10px; border-top: 1px solid rgba(220, 215, 201, 0.3); }
             .dashboard-grid { grid-template-columns: 1fr; }
             .billing-card { text-align: center; }
             .billing-card h3 { font-size: 28px !important; }
@@ -486,22 +486,22 @@ export default function App() {
       `}</style>
 
       {isMobile && (
-        <div style={{ padding: '16px', background: '#ECDFCC', borderBottom: '1px solid #697565', display: 'flex', alignItems: 'center', justifyContent: 'space-between', zIndex: 60 }}>
+        <div style={{ padding: '16px', background: '#DCD7C9', borderBottom: '1px solid #697565', display: 'flex', alignItems: 'center', justifyContent: 'space-between', zIndex: 60 }}>
             <div style={{display:'flex', alignItems:'center', gap:'12px'}}>
                 <button onClick={() => setShowMobileMenu(!showMobileMenu)} style={{border:'none', background:'none'}}><Menu size={24} color="#1E201E"/></button>
                 <span style={{fontWeight:'bold', color:'#1E201E'}}>TrackScribe</span>
             </div>
-            <button onClick={openNewEntry} style={{backgroundColor:'#1E201E', color:'#ECDFCC', border:'none', padding:'6px 12px', borderRadius:'6px', fontSize:'12px'}}>+ Add</button>
+            <button onClick={openNewEntry} style={{backgroundColor:'#A27B5C', color:'white', border:'none', padding:'6px 12px', borderRadius:'6px', fontSize:'12px'}}>+ Add</button>
         </div>
       )}
 
       <aside style={styles.sidebar}>
-        <div style={{ padding: '24px', borderBottom: '1px solid rgba(236, 223, 204, 0.1)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div style={{ padding: '24px', borderBottom: '1px solid rgba(220, 215, 201, 0.1)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <h2 style={{ fontSize: '18px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '10px', margin: 0 }}>
-            <div style={{ background: '#ECDFCC', width: '28px', height: '28px', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#1E201E', fontWeight: '900' }}>T</div>
+            <div style={{ background: '#DCD7C9', width: '28px', height: '28px', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#1E201E', fontWeight: '900' }}>T</div>
             TrackScribe
           </h2>
-          {isMobile && <button onClick={() => setShowMobileMenu(false)} style={{background:'none', border:'none', color:'#ECDFCC'}}><X size={20}/></button>}
+          {isMobile && <button onClick={() => setShowMobileMenu(false)} style={{background:'none', border:'none', color:'#DCD7C9'}}><X size={20}/></button>}
         </div>
         <nav style={{ padding: '20px 0', flex: 1 }}>
           <button onClick={() => { setView('dashboard'); setShowMobileMenu(false); }} style={{ ...styles.navBtn, ...(view === 'dashboard' ? styles.navBtnActive : {}) }}><LayoutDashboard size={18} /> Overview</button>
@@ -511,7 +511,7 @@ export default function App() {
       </aside>
       
       {isMobile && showMobileMenu && (
-        <div onClick={() => setShowMobileMenu(false)} style={{position:'fixed', inset:0, background:'rgba(30, 32, 30, 0.7)', zIndex:40}} />
+        <div onClick={() => setShowMobileMenu(false)} style={{position:'fixed', inset:0, background:'rgba(30, 32, 30, 0.8)', zIndex:40}} />
       )}
 
       <main style={styles.main}>
@@ -542,15 +542,15 @@ export default function App() {
                 
                 <div className="dashboard-grid">
                     <StatCard title="Total Lifetime Files" value={jobs.filter(j => j.status === 'Completed').length} icon={CheckCircle2} color="#1E201E" />
-                    <StatCard title="Pending Review" value={jobs.filter(j => j.status === 'Pending QA').length} icon={AlertCircle} color="#697565" />
+                    <StatCard title="Pending Review" value={jobs.filter(j => j.status === 'Pending QA').length} icon={AlertCircle} color="#A27B5C" />
                 </div>
 
-                <div style={{ background: 'white', padding: '24px', borderRadius: '16px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)' }}><h3 style={{ fontWeight: 'bold', marginBottom: '20px', fontSize: '14px', textTransform:'uppercase', color:'#3C3D37' }}>Weekly Output (Minutes)</h3><div style={{ height: '250px' }}><ResponsiveContainer width="100%" height="100%"><BarChart data={chartData}><CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" /><XAxis dataKey="date" axisLine={false} tickLine={false} tickFormatter={(str) => new Date(str).toLocaleDateString(undefined, {weekday: 'short'})} /><YAxis axisLine={false} tickLine={false} /><Tooltip cursor={{fill: 'transparent'}} /><Bar dataKey="minutes" fill="#1E201E" radius={[4, 4, 4, 4]} barSize={32} /></BarChart></ResponsiveContainer></div></div>
+                <div style={{ background: 'white', padding: '24px', borderRadius: '16px', boxShadow: '0 4px 6px -1px rgba(30,32,30,0.05)' }}><h3 style={{ fontWeight: 'bold', marginBottom: '20px', fontSize: '14px', textTransform:'uppercase', color:'#3C3D37' }}>Weekly Output (Minutes)</h3><div style={{ height: '250px' }}><ResponsiveContainer width="100%" height="100%"><BarChart data={chartData}><CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" /><XAxis dataKey="date" axisLine={false} tickLine={false} tickFormatter={(str) => new Date(str).toLocaleDateString(undefined, {weekday: 'short'})} /><YAxis axisLine={false} tickLine={false} /><Tooltip cursor={{fill: 'transparent'}} /><Bar dataKey="minutes" fill="#2C3930" radius={[4, 4, 4, 4]} barSize={32} /></BarChart></ResponsiveContainer></div></div>
               </div>
             )}
 
             {showBillingModal && (
-              <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(30, 32, 30, 0.7)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 }}>
+              <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(30, 32, 30, 0.8)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 }}>
                 <div style={{ backgroundColor: 'white', borderRadius: '16px', width: '100%', maxWidth: '350px', padding: '24px' }}>
                   <h3 style={{ margin: '0 0 16px 0', fontSize: '16px', fontWeight: 'bold', color: '#1E201E' }}>Billing Settings</h3>
                   
@@ -582,7 +582,7 @@ export default function App() {
                       setBillingStartDate(tempBillingStart); 
                       setBillingEndDate(tempBillingEnd);
                       setShowBillingModal(false); 
-                  }} style={{ width: '100%', marginTop: '10px', padding: '10px', background: '#1E201E', color: '#ECDFCC', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}>Save Changes</button>
+                  }} style={{ width: '100%', marginTop: '10px', padding: '10px', background: '#1E201E', color: '#DCD7C9', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}>Save Changes</button>
                   <button onClick={() => setShowBillingModal(false)} style={{ width: '100%', marginTop: '10px', padding: '10px', background: 'transparent', color: '#3C3D37', border: 'none', fontWeight: 'bold', cursor: 'pointer' }}>Cancel</button>
                 </div>
               </div>
@@ -592,7 +592,7 @@ export default function App() {
               <div style={{ maxWidth: '600px', margin: '0 auto' }}>
                 <h2 style={{ fontSize: '24px', fontWeight: 'bold', color: '#1E201E', marginBottom: '24px' }}>TAT Timer</h2>
                 
-                <div style={{ backgroundColor: 'white', padding: '24px', borderRadius: '16px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)' }}>
+                <div style={{ backgroundColor: 'white', padding: '24px', borderRadius: '16px', boxShadow: '0 4px 6px -1px rgba(30,32,30,0.05)' }}>
                   
                   <div style={{display:'flex', gap:'10px', marginBottom:'24px'}}>
                     <div style={{...styles.stageOption, ...(timerStage === 'FR' ? styles.stageActive : {})}}>
@@ -651,16 +651,16 @@ export default function App() {
                   <div style={{...styles.timerControls, flexDirection: isMobile ? 'column' : 'row'}}>
                     {!timerRunning ? (
                         <button onClick={handleTimerStartPause} style={{...styles.controlBtn, ...styles.startBtn}} disabled={totalTat === 0}>
-                            <Play size={16} fill="#ECDFCC" /> Start Timer
+                            <Play size={16} fill="#DCD7C9" /> Start Timer
                         </button>
                     ) : (
                         <button onClick={handleTimerStartPause} style={{...styles.controlBtn, ...styles.pauseBtn}}>
-                            <Pause size={16} fill="#ECDFCC" /> Pause
+                            <Pause size={16} fill="#FFFFFF" /> Pause
                         </button>
                     )}
 
                     {timerStage === 'FR' ? (
-                        <button onClick={handleFinishFR} style={{...styles.controlBtn, backgroundColor:'#1E201E', color:'#ECDFCC'}} disabled={totalTat === 0}>
+                        <button onClick={handleFinishFR} style={{...styles.controlBtn, backgroundColor:'#1E201E', color:'#DCD7C9'}} disabled={totalTat === 0}>
                             <ArrowRight size={16} /> Finish FR & Go to SV
                         </button>
                     ) : (
@@ -708,7 +708,7 @@ export default function App() {
                     </div>
                     <div style={{ marginBottom: '16px' }}><label style={styles.label}>Link</label><input type="url" style={styles.input} placeholder="https://..." value={formData.link} onChange={e => setFormData({...formData, link: e.target.value})} /></div>
                     <div style={{ marginBottom: '24px' }}><label style={styles.label}>Status</label><select style={styles.input} value={formData.status} onChange={e => setFormData({...formData, status: e.target.value})}><option>In Progress</option><option>Pending QA</option><option>Completed</option></select></div>
-                    <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}><button type="button" onClick={() => setShowEntryModal(false)} style={{ padding: '10px 16px', border: 'none', background: 'transparent', color: '#3C3D37', fontWeight: '600', cursor: 'pointer' }}>Cancel</button><button type="submit" style={{ padding: '10px 20px', border: 'none', background: '#1E201E', color: '#ECDFCC', borderRadius: '8px', fontWeight: '600', cursor: 'pointer', boxShadow: '0 4px 6px -1px rgba(79, 70, 229, 0.2)' }}>{loading ? 'Saving...' : 'Save Entry'}</button></div>
+                    <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}><button type="button" onClick={() => setShowEntryModal(false)} style={{ padding: '10px 16px', border: 'none', background: 'transparent', color: '#3C3D37', fontWeight: '600', cursor: 'pointer' }}>Cancel</button><button type="submit" style={{ padding: '10px 20px', border: 'none', background: '#A27B5C', color: 'white', borderRadius: '8px', fontWeight: '600', cursor: 'pointer', boxShadow: '0 4px 6px -1px rgba(162, 123, 92, 0.3)' }}>{loading ? 'Saving...' : 'Save Entry'}</button></div>
                   </form>
                 </div>
               </div>
@@ -719,16 +719,16 @@ export default function App() {
                 <div style={{ display: 'flex', flexWrap:'wrap', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', gap:'10px' }}>
                   {!isMobile && <div style={{display:'flex', alignItems:'center', gap:'16px'}}><h2 style={{ fontSize: '24px', fontWeight: 'bold', color: '#1E201E', margin: '0' }}>File History</h2><button onClick={openNewEntry} style={styles.primaryBtn}><Plus size={16} /> Add New</button></div>}
                   <div style={{ display: 'flex', flexDirection:'column', alignItems: 'flex-end', gap: '8px', width: isMobile ? '100%' : 'auto' }}>
-                    <div style={{ background: '#697565', color: '#ECDFCC', padding: '8px 12px', borderRadius: '8px', fontWeight: '700', fontSize: '13px', border:'1px solid #3C3D37', display:'flex', gap:'8px', width: isMobile ? '100%' : 'auto', justifyContent: isMobile ? 'center' : 'flex-start' }}><span>Total: {formatDecimalHours(listTotalSeconds)}</span><span style={{opacity:0.6}}>|</span><span>{formatDuration(listTotalSeconds)}</span></div>
+                    <div style={{ background: '#3F4F44', color: '#DCD7C9', padding: '8px 12px', borderRadius: '8px', fontWeight: '700', fontSize: '13px', border:'1px solid #1E201E', display:'flex', gap:'8px', width: isMobile ? '100%' : 'auto', justifyContent: isMobile ? 'center' : 'flex-start' }}><span>Total: {formatDecimalHours(listTotalSeconds)}</span><span style={{opacity:0.6}}>|</span><span>{formatDuration(listTotalSeconds)}</span></div>
                     <div style={{display:'flex', gap:'8px', alignItems:'center', flexWrap: 'wrap', width: isMobile ? '100%' : 'auto'}}>
-                        {hasActiveFilters && (<button onClick={clearAllFilters} style={{display:'flex', alignItems:'center', gap:'4px', border:'none', background:'#fee2e2', color:'#ef4444', borderRadius:'8px', padding:'0 10px', height:'34px', cursor:'pointer', fontSize:'12px', fontWeight:'bold'}}><RotateCcw size={12} /> Clear</button>)}
+                        {hasActiveFilters && (<button onClick={clearAllFilters} style={{display:'flex', alignItems:'center', gap:'4px', border:'none', background:'#A27B5C', color:'#ffffff', borderRadius:'8px', padding:'0 10px', height:'34px', cursor:'pointer', fontSize:'12px', fontWeight:'bold'}}><RotateCcw size={12} /> Clear</button>)}
                         <select value={filterType} onChange={(e) => setFilterType(e.target.value)} style={{padding: '8px', borderRadius: '8px', border: '1px solid #697565', fontSize: '13px', cursor:'pointer', backgroundColor:'white', height:'34px', flex: isMobile ? 1 : 'unset'}}><option value="All">All Types</option><option value="Mantis">Mantis</option><option value="Cricket">Cricket</option></select>
                         <input type="date" value={filterDate} onChange={(e) => setFilterDate(e.target.value)} style={{padding: '8px', borderRadius: '8px', border: '1px solid #697565', fontSize: '13px', backgroundColor:'white', height:'34px', boxSizing:'border-box', flex: isMobile ? 1 : 'unset'}} />
                         <div style={{position:'relative', width: isMobile ? '100%' : 'auto'}}><Search size={16} style={{position:'absolute', left:'10px', top:'9px', opacity:0.4}} /><input style={{...styles.input, width: isMobile ? '100%' : '200px', backgroundColor: 'white', paddingLeft:'32px', height:'34px'}} placeholder="Search..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} /></div>
                     </div>
                   </div>
                 </div>
-                <div style={{ overflowX: 'auto', borderRadius: '12px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)' }}>
+                <div style={{ overflowX: 'auto', borderRadius: '12px', boxShadow: '0 4px 6px -1px rgba(30, 32, 30, 0.05)' }}>
                   <table style={styles.table}>
                     <thead>
                       <tr>
@@ -743,7 +743,7 @@ export default function App() {
                     </thead>
                     <tbody>
                       {sortedJobs.length > 0 ? sortedJobs.map(job => (
-                        <tr key={job.id} style={{ borderBottom: '1px solid #ECDFCC', backgroundColor: job.file_name.startsWith('Unnamed File') ? '#fee2e2' : 'white' }}>
+                        <tr key={job.id} style={{ borderBottom: '1px solid #DCD7C9', backgroundColor: job.file_name.startsWith('Unnamed File') ? '#EBE3D9' : 'white' }}>
                           <td style={styles.td}>{formatDate(job.date)}</td>
                           <td style={{...styles.td, width: `${colWidth}px`, minWidth: `${colWidth}px`, maxWidth: `${colWidth}px`}}><div style={styles.tdWrapper} className="no-scrollbar" title={job.file_name}>{job.file_name}</div></td>
                           <td style={{...styles.td, display: isMobile ? 'none' : 'table-cell'}}>{job.client||'-'}</td>
@@ -761,7 +761,7 @@ export default function App() {
       </main>
       
       <Analytics />
-      <style>{` .stat-card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); display: flex; align-items: center; justify-content: space-between; transition: transform 0.2s; } .stat-card:hover { transform: translateY(-2px); } .stat-title { font-size: 11px; font-weight: 700; color: #3C3D37; text-transform: uppercase; margin-bottom: 4px; letter-spacing: 0.5px; } .stat-value { font-size: 24px; font-weight: 800; color: #1E201E; margin: 0; } .stat-icon { width: 44px; height: 44px; border-radius: 10px; display: flex; align-items: center; justify-content: center; } @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } } ::-webkit-scrollbar { width: 8px; } ::-webkit-scrollbar-track { background: #f1f5f9; } ::-webkit-scrollbar-thumb { background: #697565; border-radius: 4px; } `}</style>
+      <style>{` .stat-card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(30,32,30,0.05); display: flex; align-items: center; justify-content: space-between; transition: transform 0.2s; } .stat-card:hover { transform: translateY(-2px); } .stat-title { font-size: 11px; font-weight: 700; color: #3C3D37; text-transform: uppercase; margin-bottom: 4px; letter-spacing: 0.5px; } .stat-value { font-size: 24px; font-weight: 800; color: #1E201E; margin: 0; } .stat-icon { width: 44px; height: 44px; border-radius: 10px; display: flex; align-items: center; justify-content: center; } @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } } ::-webkit-scrollbar { width: 8px; } ::-webkit-scrollbar-track { background: #DCD7C9; } ::-webkit-scrollbar-thumb { background: #697565; border-radius: 4px; } `}</style>
     </div>
   );
 }
