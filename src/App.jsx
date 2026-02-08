@@ -33,63 +33,50 @@ const formatDate = (dateString) => {
 
 // --- Components ---
 
-const AuthScreen = ({ onLogin }) => {
+// 1. LOCKED AUTH SCREEN (No Sign Up)
+const AuthScreen = () => {
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [isSignUp, setIsSignUp] = useState(false);
   const [msg, setMsg] = useState('');
 
-  const handleAuth = async (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
     setLoading(true);
     setMsg('');
 
-    if (isSignUp) {
-      const { error } = await supabase.auth.signUp({ email, password });
-      if (error) setMsg(error.message);
-      else setMsg('Success! Please check your email to confirm.');
-    } else {
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error) setMsg(error.message);
-      // Login is handled automatically by the onAuthStateChange listener in App
-    }
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) setMsg("Access Denied: Incorrect credentials.");
+    // App component listens to auth state and will switch view automatically on success
     setLoading(false);
   };
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#f1f5f9', padding: '20px' }}>
-      <div style={{ backgroundColor: 'white', padding: '40px', borderRadius: '16px', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)', width: '100%', maxWidth: '400px' }}>
-        <div style={{ textAlign: 'center', marginBottom: '24px' }}>
-          <div style={{ background: '#4f46e5', width: '48px', height: '48px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px', color: 'white' }}>
-            <Lock size={24} />
+    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#f1f5f9', padding: '20px', fontFamily: 'Inter, sans-serif' }}>
+      <div style={{ backgroundColor: 'white', padding: '40px', borderRadius: '16px', boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1)', width: '100%', maxWidth: '400px' }}>
+        <div style={{ textAlign: 'center', marginBottom: '30px' }}>
+          <div style={{ background: '#4f46e5', width: '56px', height: '56px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px', color: 'white' }}>
+            <Lock size={28} />
           </div>
-          <h2 style={{ fontSize: '24px', fontWeight: 'bold', color: '#0f172a' }}>{isSignUp ? 'Create Account' : 'Welcome Back'}</h2>
-          <p style={{ color: '#64748b', marginTop: '8px' }}>{isSignUp ? 'Start tracking your transcription work.' : 'Sign in to access your dashboard.'}</p>
+          <h2 style={{ fontSize: '24px', fontWeight: '800', color: '#0f172a', marginBottom: '8px' }}>TrackScribe</h2>
+          <p style={{ color: '#64748b', fontSize: '14px' }}>Authorized Personnel Only</p>
         </div>
 
-        {msg && <div style={{ backgroundColor: msg.includes('Success') ? '#dcfce7' : '#fee2e2', color: msg.includes('Success') ? '#166534' : '#991b1b', padding: '12px', borderRadius: '8px', marginBottom: '20px', fontSize: '14px', textAlign: 'center' }}>{msg}</div>}
+        {msg && <div style={{ backgroundColor: '#fee2e2', color: '#991b1b', padding: '12px', borderRadius: '8px', marginBottom: '20px', fontSize: '13px', textAlign: 'center', fontWeight: '500' }}>{msg}</div>}
 
-        <form onSubmit={handleAuth}>
+        <form onSubmit={handleLogin}>
           <div style={{ marginBottom: '16px' }}>
-            <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: '#475569', marginBottom: '6px' }}>Email Address</label>
-            <input type="email" required style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '15px' }} value={email} onChange={e => setEmail(e.target.value)} />
+            <label style={{ display: 'block', fontSize: '12px', fontWeight: '700', color: '#475569', marginBottom: '6px', textTransform: 'uppercase' }}>Email</label>
+            <input type="email" placeholder="user@tracker.com" required style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '15px', outline: 'none', transition: 'border 0.2s', boxSizing:'border-box' }} value={email} onChange={e => setEmail(e.target.value)} />
           </div>
           <div style={{ marginBottom: '24px' }}>
-            <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: '#475569', marginBottom: '6px' }}>Password</label>
-            <input type="password" required minLength={6} style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '15px' }} value={password} onChange={e => setPassword(e.target.value)} />
+            <label style={{ display: 'block', fontSize: '12px', fontWeight: '700', color: '#475569', marginBottom: '6px', textTransform: 'uppercase' }}>Password</label>
+            <input type="password" required style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '15px', outline: 'none', transition: 'border 0.2s', boxSizing:'border-box' }} value={password} onChange={e => setPassword(e.target.value)} />
           </div>
-          <button type="submit" style={{ width: '100%', padding: '12px', background: '#4f46e5', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', fontSize: '15px', cursor: 'pointer' }}>
-            {loading ? 'Processing...' : (isSignUp ? 'Sign Up' : 'Sign In')}
+          <button type="submit" style={{ width: '100%', padding: '12px', background: '#4f46e5', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', fontSize: '15px', cursor: 'pointer', transition: 'background 0.2s' }}>
+            {loading ? 'Verifying...' : 'Login'}
           </button>
         </form>
-
-        <p style={{ textAlign: 'center', marginTop: '20px', fontSize: '14px', color: '#64748b' }}>
-          {isSignUp ? 'Already have an account?' : "Don't have an account?"} 
-          <button onClick={() => setIsSignUp(!isSignUp)} style={{ background: 'none', border: 'none', color: '#4f46e5', fontWeight: 'bold', cursor: 'pointer', marginLeft: '5px' }}>
-            {isSignUp ? 'Log In' : 'Sign Up'}
-          </button>
-        </p>
       </div>
     </div>
   );
@@ -154,6 +141,11 @@ export default function App() {
     return () => subscription.unsubscribe();
   }, []);
 
+  // Save billing preference
+  useEffect(() => {
+    localStorage.setItem('billingStart', billingStartDay);
+  }, [billingStartDay]);
+
   const fetchJobs = async () => {
     setLoading(true);
     let { data, error } = await supabase.from('jobs').select('*').order('created_at', { ascending: false });
@@ -210,6 +202,8 @@ export default function App() {
     setView('add');
   };
 
+  const handleTimeChange = (e) => setFormData({...formData, timeString: e.target.value.replace(/[^0-9:]/g, '')});
+
   // Calculations
   const getBillingCycle = () => {
     const today = new Date();
@@ -242,7 +236,7 @@ export default function App() {
     main: { flex: 1, marginLeft: '250px', padding: '2rem', overflowY: 'auto' },
     navBtn: { display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 20px', width: '100%', background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', fontSize: '14px', fontWeight: '500', transition: 'all 0.2s' },
     navBtnActive: { backgroundColor: '#1e293b', color: 'white', borderRight: '3px solid #6366f1' },
-    input: { width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '14px', outline: 'none', backgroundColor: '#f8fafc' },
+    input: { width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '14px', outline: 'none', backgroundColor: '#f8fafc', boxSizing:'border-box' },
     table: { width: '100%', borderCollapse: 'collapse', backgroundColor: 'white', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' },
     th: { backgroundColor: '#f8fafc', color: '#475569', padding: '12px 16px', textAlign: 'left', fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', borderBottom: '1px solid #e2e8f0' },
     td: { padding: '14px 16px', borderBottom: '1px solid #f1f5f9', fontSize: '14px', color: '#334155' }
@@ -301,19 +295,45 @@ export default function App() {
               <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(15, 23, 42, 0.7)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 }}>
                 <div style={{ backgroundColor: 'white', borderRadius: '16px', width: '100%', maxWidth: '480px', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)', overflow: 'hidden' }}>
                   <div style={{ padding: '16px 24px', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <h2 style={{ margin: 0, fontSize: '16px', fontWeight: 'bold' }}>{isEditing ? 'Edit Entry' : 'New Entry'}</h2>
-                    <button onClick={() => setView('dashboard')} style={{ background: 'transparent', border: 'none', cursor: 'pointer' }}><X size={20}/></button>
+                    <h2 style={{ margin: 0, fontSize: '16px', fontWeight: 'bold', color: '#0f172a' }}>{isEditing ? 'Edit Entry' : 'New Entry'}</h2>
+                    <button onClick={() => setView('dashboard')} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: '#64748b' }}><X size={20}/></button>
                   </div>
+                  
                   <form onSubmit={handleSave} style={{ padding: '24px' }}>
-                    <div style={{ marginBottom: '16px' }}><label style={{ display: 'block', fontSize: '12px', fontWeight: '600', color: '#64748b', marginBottom: '6px', textTransform: 'uppercase' }}>File Name</label><input required style={styles.input} value={formData.file_name} onChange={e => setFormData({...formData, file_name: e.target.value})} /></div>
-                    <div style={{ marginBottom: '16px' }}><label style={{ display: 'block', fontSize: '12px', fontWeight: '600', color: '#64748b', marginBottom: '6px', textTransform: 'uppercase' }}>Client Name</label><input style={styles.input} value={formData.client} onChange={e => setFormData({...formData, client: e.target.value})} /></div>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
-                      <div><label style={{ display: 'block', fontSize: '12px', fontWeight: '600', color: '#64748b', marginBottom: '6px', textTransform: 'uppercase' }}>Duration</label><input style={{...styles.input, fontFamily: 'monospace'}} placeholder="00:00:00" value={formData.timeString} onChange={(e) => setFormData({...formData, timeString: e.target.value.replace(/[^0-9:]/g, '')})} /></div>
-                      <div><label style={{ display: 'block', fontSize: '12px', fontWeight: '600', color: '#64748b', marginBottom: '6px', textTransform: 'uppercase' }}>Date</label><input type="date" style={styles.input} value={formData.date} onChange={e => setFormData({...formData, date: e.target.value})} /></div>
+                    <div style={{ marginBottom: '16px' }}>
+                      <label style={styles.label}>File Name</label>
+                      <input required style={styles.input} placeholder="e.g. Meeting_Audio_01" value={formData.file_name} onChange={e => setFormData({...formData, file_name: e.target.value})} />
                     </div>
-                    <div style={{ marginBottom: '16px' }}><label style={{ display: 'block', fontSize: '12px', fontWeight: '600', color: '#64748b', marginBottom: '6px', textTransform: 'uppercase' }}>Link</label><input type="url" style={styles.input} value={formData.link} onChange={e => setFormData({...formData, link: e.target.value})} /></div>
-                    <div style={{ marginBottom: '24px' }}><label style={{ display: 'block', fontSize: '12px', fontWeight: '600', color: '#64748b', marginBottom: '6px', textTransform: 'uppercase' }}>Status</label><select style={styles.input} value={formData.status} onChange={e => setFormData({...formData, status: e.target.value})}><option>In Progress</option><option>Pending QA</option><option>Completed</option></select></div>
-                    <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}><button type="button" onClick={() => setView('dashboard')} style={{ padding: '10px 16px', border: 'none', background: 'transparent', color: '#64748b', fontWeight: '600', cursor: 'pointer' }}>Cancel</button><button type="submit" style={{ padding: '10px 20px', border: 'none', background: '#4f46e5', color: 'white', borderRadius: '8px', fontWeight: '600', cursor: 'pointer' }}>Save Entry</button></div>
+                    <div style={{ marginBottom: '16px' }}>
+                      <label style={styles.label}>Client Name</label>
+                      <input style={styles.input} placeholder="Optional" value={formData.client} onChange={e => setFormData({...formData, client: e.target.value})} />
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
+                      <div>
+                        <label style={styles.label}>Duration (HH:MM:SS)</label>
+                        <input style={{...styles.input, fontFamily: 'monospace'}} placeholder="00:00:00" maxLength={8} value={formData.timeString} onChange={handleTimeChange} />
+                      </div>
+                      <div>
+                         <label style={styles.label}>Date</label>
+                         <input type="date" style={styles.input} value={formData.date} onChange={e => setFormData({...formData, date: e.target.value})} />
+                      </div>
+                    </div>
+                    <div style={{ marginBottom: '16px' }}>
+                      <label style={styles.label}>Link</label>
+                      <input type="url" style={styles.input} placeholder="https://..." value={formData.link} onChange={e => setFormData({...formData, link: e.target.value})} />
+                    </div>
+                    <div style={{ marginBottom: '24px' }}>
+                      <label style={styles.label}>Status</label>
+                      <select style={styles.input} value={formData.status} onChange={e => setFormData({...formData, status: e.target.value})}>
+                        <option>In Progress</option>
+                        <option>Pending QA</option>
+                        <option>Completed</option>
+                      </select>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
+                      <button type="button" onClick={() => setView('dashboard')} style={{ padding: '10px 16px', border: 'none', background: 'transparent', color: '#64748b', fontWeight: '600', cursor: 'pointer' }}>Cancel</button>
+                      <button type="submit" style={{ padding: '10px 20px', border: 'none', background: '#4f46e5', color: 'white', borderRadius: '8px', fontWeight: '600', cursor: 'pointer', boxShadow: '0 4px 6px -1px rgba(79, 70, 229, 0.2)' }}>{loading ? 'Saving...' : 'Save Entry'}</button>
+                    </div>
                   </form>
                 </div>
               </div>
@@ -325,6 +345,7 @@ export default function App() {
                   <h3 style={{ margin: '0 0 16px 0', fontSize: '16px', fontWeight: 'bold' }}>Billing Settings</h3>
                   <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', color: '#64748b', marginBottom: '6px', textTransform: 'uppercase' }}>Start Day</label>
                   <input type="number" min="1" max="31" value={tempBillingDay} onChange={(e) => setTempBillingDay(parseInt(e.target.value))} style={styles.input} />
+                  <p style={{fontSize:'12px', color:'#64748b', marginTop:'8px'}}>Example: <strong>13</strong> means cycle runs from 13th to 12th.</p>
                   <button onClick={() => { setBillingStartDay(tempBillingDay); setShowBillingModal(false); }} style={{ width: '100%', marginTop: '20px', padding: '10px', background: '#4f46e5', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}>Save Changes</button>
                   <button onClick={() => setShowBillingModal(false)} style={{ width: '100%', marginTop: '10px', padding: '10px', background: 'transparent', color: '#64748b', border: 'none', fontWeight: 'bold', cursor: 'pointer' }}>Cancel</button>
                 </div>
@@ -333,7 +354,7 @@ export default function App() {
             
             {view === 'list' && (
               <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}><h2 style={{ fontSize: '24px', fontWeight: 'bold' }}>File History</h2><input style={{...styles.input, width: '250px', backgroundColor: 'white'}} placeholder="Search..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} /></div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}><h2 style={{ fontSize: '24px', fontWeight: 'bold', color: '#0f172a' }}>File History</h2><input style={{...styles.input, width: '250px', backgroundColor: 'white'}} placeholder="Search..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} /></div>
                 <div style={{ overflowX: 'auto', borderRadius: '12px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)' }}>
                   <table style={styles.table}>
                     <thead><tr><th style={styles.th}>Date</th><th style={styles.th}>File Name</th><th style={styles.th}>Client</th><th style={styles.th}>Duration</th><th style={styles.th}>Status</th><th style={styles.th}>Link</th><th style={{...styles.th, textAlign: 'right'}}>Actions</th></tr></thead>
@@ -346,7 +367,8 @@ export default function App() {
         )}
       </main>
       <style>{`
-        .stat-card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); display: flex; align-items: center; justify-content: space-between; }
+        .stat-card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); display: flex; align-items: center; justify-content: space-between; transition: transform 0.2s; }
+        .stat-card:hover { transform: translateY(-2px); }
         .stat-title { font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase; margin-bottom: 4px; letter-spacing: 0.5px; }
         .stat-value { font-size: 24px; font-weight: 800; color: #0f172a; margin: 0; }
         .stat-icon { width: 44px; height: 44px; border-radius: 10px; display: flex; align-items: center; justify-content: center; }
