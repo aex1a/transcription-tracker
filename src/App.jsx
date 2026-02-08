@@ -2,10 +2,11 @@ import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from './supabase'; 
 import { Analytics } from "@vercel/analytics/react"; 
 import { 
-  LayoutDashboard, Plus, List, 
+  LayoutDashboard, Plus, List, Timer, // Added Timer icon
   Trash2, Edit2, ExternalLink, Search, 
   CheckCircle2, Clock, AlertCircle, Loader2, X, CalendarDays, Settings,
-  ArrowUpDown, ArrowUp, ArrowDown, Filter, RotateCcw, GripVertical
+  ArrowUpDown, ArrowUp, ArrowDown, Filter, RotateCcw, GripVertical,
+  Play, Pause, Square // Added icons for timer controls
 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 
@@ -38,6 +39,17 @@ const formatDuration = (totalSeconds) => {
   if (s > 0 || parts.length === 0) parts.push(`${s}s`);
   
   return parts.join(' ');
+};
+
+// Helper to parse "HH:MM:SS" string to total seconds for TAT calculation
+const parseDurationStringToSeconds = (timeString) => {
+  if (!timeString) return 0;
+  const parts = timeString.split(':').map(Number);
+  let h = 0, m = 0, s = 0;
+  if (parts.length === 3) { h = parts[0]; m = parts[1]; s = parts[2]; }
+  else if (parts.length === 2) { m = parts[0]; s = parts[1]; }
+  else if (parts.length === 1) { m = parts[0]; }
+  return (h || 0) * 3600 + (m || 0) * 60 + (s || 0);
 };
 
 const formatDate = (dateString) => {
@@ -97,6 +109,7 @@ export default function App() {
   const [showBillingModal, setShowBillingModal] = useState(false);
   const [tempBillingDay, setTempBillingDay] = useState(billingStartDay);
 
+  // --- NEW ENTRY MODAL STATE ---
   const [formData, setFormData] = useState({ 
     file_name: '', client: 'Mantis', timeString: '', 
     date: new Date().toISOString().split('T')[0], 
@@ -105,9 +118,58 @@ export default function App() {
   const [isEditing, setIsEditing] = useState(null);
   const [showEntryModal, setShowEntryModal] = useState(false); 
 
+  // --- TIMER VIEW STATE ---
+  const [timerData, setTimerData] = useState({
+    file_name: '', client: 'Mantis', durationString: '', 
+    link: '', stage: 'FR' // 'FR' or 'SV' based on image_3.png
+  });
+  const [timerRunning, setTimerRunning] = useState(false);
+  const [timeLeft, setTimeLeft] = useState(0); // In seconds
+  const [totalTat, setTotalTat] = useState(0); // Total calculated TAT
+  const timerIntervalRef = useRef(null);
+
   // --- Data Fetching ---
   useEffect(() => { fetchJobs(); }, []);
   useEffect(() => { localStorage.setItem('billingStart', billingStartDay); }, [billingStartDay]);
+
+  // --- TIMER COUNTDOWN LOGIC ---
+  useEffect(() => {
+    if (timerRunning && timeLeft > 0) {
+      timerIntervalRef.current = setInterval(() => {
+        setTimeLeft((prevTime) => Math.max(0, prevTime - 1));
+      }, 1000);
+    } else if (timeLeft === 0 && timerRunning) {
+      setTimerRunning(false);
+      clearInterval(timerIntervalRef.current);
+      // Optional: Play a sound or show a notification here
+    }
+    return () => clearInterval(timerIntervalRef.current);
+  }, [timerRunning, timeLeft]);
+
+  // Calculate TAT based on duration and stage
+  const calculateTat = () => {
+    const audioSeconds = parseDurationStringToSeconds(timerData.durationString);
+    if (audioSeconds === 0) {
+      setTotalTat(0);
+      if (!timerRunning) setTimeLeft(0);
+      return;
+    }
+    // FR is 0.5x, SV is 1.5x audio length
+    const multiplier = timerData.stage === 'FR' ? 0.5 : 1.5;
+    const calculatedTat = Math.round(audioSeconds * multiplier);
+    setTotalTat(calculatedTat);
+    if (!timerRunning) {
+        setTimeLeft(calculatedTat);
+    }
+  };
+
+  // Recalculate TAT when inputs change, only if timer isn't running
+  useEffect(() => {
+    if (!timerRunning) {
+        calculateTat();
+    }
+  }, [timerData.durationString, timerData.stage]);
+
 
   // --- RESIZE LOGIC (Excel Style) ---
   useEffect(() => {
@@ -143,7 +205,7 @@ export default function App() {
     setLoading(false);
   };
 
-  // --- Handlers ---
+  // --- Handlers for New Entry Modal ---
   const handleSave = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -171,6 +233,62 @@ export default function App() {
     setFormData({ file_name: '', client: 'Mantis', timeString: '', date: new Date().toISOString().split('T')[0], link: '', notes: '', status: 'In Progress' });
     setIsEditing(null);
     setShowEntryModal(false);
+  };
+
+  // --- Handlers for Timer View ---
+  const handleTimerStartPause = () => {
+    if (totalTat === 0) {
+        calculateTat();
+        if (totalTat === 0) return alert("Please enter a valid audio duration first.");
+    }
+    setTimerRunning(!timerRunning);
+  };
+
+  const handleTimerStopSave = async () => {
+    if (totalTat === 0) return;
+    setTimerRunning(false);
+    clearInterval(timerIntervalRef.current);
+
+    if (!confirm("Stop timer and mark file as Completed?")) return;
+    
+    setLoading(true);
+    const deviceId = getDeviceId();
+    
+    // Use the original audio duration for the record
+    const audioSeconds = parseDurationStringToSeconds(timerData.durationString);
+    const h = Math.floor(audioSeconds / 3600);
+    const m = Math.floor((audioSeconds % 3600) / 60);
+    const s = audioSeconds % 60;
+
+    const payload = { 
+      file_name: timerData.file_name || 'Untitled Timer Entry', 
+      client: timerData.client, 
+      hours: h, minutes: m, seconds: s, 
+      date: new Date().toISOString().split('T')[0], 
+      link: timerData.link, 
+      status: 'Completed', // Automatically mark as completed
+      total_seconds: audioSeconds, 
+      total_minutes: Math.floor(audioSeconds / 60),
+      user_id: deviceId 
+    };
+
+    const { error } = await supabase.from('jobs').insert([payload]);
+    if (error) {
+        alert("Error saving entry: " + error.message);
+    } else {
+        await fetchJobs();
+        // Reset timer view
+        setTimerData({ file_name: '', client: 'Mantis', durationString: '', link: '', stage: 'FR' });
+        setTimeLeft(0);
+        setTotalTat(0);
+        setView('list'); // Go to list view to see the new entry
+    }
+    setLoading(false);
+  };
+
+  const handleTimerDurationChange = (e) => {
+      const newDuration = e.target.value.replace(/[^0-9:]/g, '');
+      setTimerData({...timerData, durationString: newDuration});
   };
 
   const handleDelete = async (id) => {
@@ -276,13 +394,13 @@ export default function App() {
     navBtn: { display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 20px', width: '100%', background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', fontSize: '14px', fontWeight: '500', transition: 'all 0.2s' },
     navBtnActive: { backgroundColor: '#1e293b', color: 'white', borderRight: '3px solid #6366f1' },
     input: { width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '14px', outline: 'none', backgroundColor: '#f8fafc', boxSizing:'border-box' },
+    label: { display: 'block', marginBottom: '6px', fontSize: '14px', fontWeight: '500', color: '#334155' },
     table: { width: '100%', borderCollapse: 'collapse', backgroundColor: 'white', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' },
     th: { backgroundColor: '#f8fafc', color: '#475569', padding: '12px 16px', textAlign: 'left', fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', borderBottom: '1px solid #e2e8f0' },
     thClickable: { cursor: 'pointer', userSelect: 'none', display:'flex', alignItems:'center', gap:'6px' },
     td: { padding: '14px 16px', borderBottom: '1px solid #f1f5f9', fontSize: '14px', color: '#334155' },
     
     // EXCEL STYLE RESIZABLE CELL WRAPPER
-    // Note: We use a Wrapper DIV inside the TD to ensure scrolling works
     tdWrapper: {
       width: '100%',
       height: '100%',
@@ -294,7 +412,19 @@ export default function App() {
 
     radioLabel: { display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', cursor: 'pointer', padding: '10px', borderRadius: '8px', border: '1px solid #e2e8f0', backgroundColor: '#f8fafc' },
     radioActive: { backgroundColor: '#e0e7ff', borderColor: '#6366f1', color: '#4338ca', fontWeight: '600' },
-    primaryBtn: { backgroundColor: '#4f46e5', color: 'white', padding: '8px 16px', borderRadius: '8px', border: 'none', fontWeight: '600', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px' }
+    primaryBtn: { backgroundColor: '#4f46e5', color: 'white', padding: '8px 16px', borderRadius: '8px', border: 'none', fontWeight: '600', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px' },
+    
+    // TIMER STYLES
+    timerDisplay: { fontSize: '48px', fontWeight: 'bold', fontFamily: 'monospace', color: '#4f46e5', textAlign: 'center', margin: '20px 0' },
+    timerControls: { display: 'flex', justifyContent: 'center', gap: '20px', marginBottom: '20px' },
+    controlBtn: { display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 20px', borderRadius: '8px', border: 'none', fontWeight: '600', cursor: 'pointer', fontSize: '14px' },
+    startBtn: { backgroundColor: '#10b981', color: 'white' },
+    pauseBtn: { backgroundColor: '#f59e0b', color: 'white' },
+    stopBtn: { backgroundColor: '#ef4444', color: 'white' },
+    stageOption: { display: 'flex', flexDirection: 'column', padding: '15px', borderRadius: '8px', border: '2px solid #e2e8f0', cursor: 'pointer', flex: 1 },
+    stageActive: { borderColor: '#6366f1', backgroundColor: '#e0e7ff' },
+    stageTitle: { fontWeight: 'bold', marginBottom: '4px', color: '#0f172a' },
+    stageDesc: { fontSize: '12px', color: '#64748b' }
   };
 
   return (
@@ -315,6 +445,10 @@ export default function App() {
         <nav style={{ padding: '20px 0', flex: 1 }}>
           <button onClick={() => setView('dashboard')} style={{ ...styles.navBtn, ...(view === 'dashboard' ? styles.navBtnActive : {}) }}>
             <LayoutDashboard size={18} /> Overview
+          </button>
+          {/* NEW TIMER SIDEBAR OPTION */}
+          <button onClick={() => setView('timer')} style={{ ...styles.navBtn, ...(view === 'timer' ? styles.navBtnActive : {}) }}>
+            <Timer size={18} /> Timer
           </button>
           <button onClick={() => setView('list')} style={{ ...styles.navBtn, ...(view === 'list' ? styles.navBtnActive : {}) }}>
             <List size={18} /> All Files
@@ -351,7 +485,94 @@ export default function App() {
               </div>
             )}
 
-            {/* ENTRY MODAL */}
+            {/* --- NEW TIMER VIEW --- */}
+            {view === 'timer' && (
+              <div style={{ maxWidth: '600px', margin: '0 auto' }}>
+                <h2 style={{ fontSize: '24px', fontWeight: 'bold', color: '#0f172a', marginBottom: '24px' }}>TAT Timer</h2>
+                
+                <div style={{ backgroundColor: 'white', padding: '24px', borderRadius: '16px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)' }}>
+                  
+                  {/* FORM FIELDS */}
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
+                    <div>
+                      <label style={styles.label}>File Name</label>
+                      <input style={styles.input} placeholder="e.g. Meeting_Audio_01" value={timerData.file_name} onChange={e => setTimerData({...timerData, file_name: e.target.value})} disabled={timerRunning} />
+                    </div>
+                    <div>
+                        <label style={styles.label}>Audio Duration (HH:MM:SS)</label>
+                        <input style={{...styles.input, fontFamily: 'monospace'}} placeholder="00:00:00" maxLength={8} value={timerData.durationString} onChange={handleTimerDurationChange} disabled={timerRunning} onBlur={calculateTat} />
+                    </div>
+                  </div>
+
+                  <div style={{ marginBottom: '20px' }}>
+                      <label style={styles.label}>File Type</label>
+                      <div style={{ display: 'flex', gap: '10px' }}>
+                        {['Mantis', 'Cricket'].map(type => (
+                          <div key={type} onClick={() => !timerRunning && setTimerData({...timerData, client: type})} style={{...styles.radioLabel, ...(timerData.client === type ? styles.radioActive : {}), cursor: timerRunning ? 'not-allowed' : 'pointer', opacity: timerRunning ? 0.7 : 1}}>
+                            <div style={{width:'16px', height:'16px', borderRadius:'50%', border:'2px solid', borderColor: timerData.client === type ? '#6366f1' : '#cbd5e1', display:'flex', alignItems:'center', justifyContent:'center'}}>
+                              {timerData.client === type && <div style={{width:'8px', height:'8px', borderRadius:'50%', backgroundColor:'#6366f1'}} />}
+                            </div>
+                            {type}
+                          </div>
+                        ))}
+                      </div>
+                  </div>
+
+                  {/* STAGE SELECTION (Determines TAT based on image_3.png) */}
+                  <div style={{ marginBottom: '24px' }}>
+                    <label style={styles.label}>Select Stage (Determines TAT)</label>
+                    <div style={{ display: 'flex', gap: '16px' }}>
+                      <div 
+                        onClick={() => !timerRunning && setTimerData({...timerData, stage: 'FR'})} 
+                        style={{...styles.stageOption, ...(timerData.stage === 'FR' ? styles.stageActive : {}), cursor: timerRunning ? 'not-allowed' : 'pointer', opacity: timerRunning ? 0.7 : 1}}
+                      >
+                        <span style={styles.stageTitle}>First Review (FR)</span>
+                        <span style={styles.stageDesc}>TAT: 0.5x Audio Length</span>
+                      </div>
+                      <div 
+                        onClick={() => !timerRunning && setTimerData({...timerData, stage: 'SV'})} 
+                        style={{...styles.stageOption, ...(timerData.stage === 'SV' ? styles.stageActive : {}), cursor: timerRunning ? 'not-allowed' : 'pointer', opacity: timerRunning ? 0.7 : 1}}
+                      >
+                        <span style={styles.stageTitle}>Speaker Verified (SV)</span>
+                        <span style={styles.stageDesc}>TAT: 1.5x Audio Length</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* TIMER DISPLAY */}
+                  <div style={{textAlign:'center', marginBottom:'20px'}}>
+                    <div style={{fontSize:'14px', color:'#64748b', marginBottom:'4px'}}>Target TAT Countdown</div>
+                    <div style={styles.timerDisplay}>
+                        {formatDuration(timeLeft)}
+                    </div>
+                  </div>
+
+                  {/* TIMER CONTROLS */}
+                  <div style={styles.timerControls}>
+                    {!timerRunning ? (
+                        <button onClick={handleTimerStartPause} style={{...styles.controlBtn, ...styles.startBtn}} disabled={totalTat === 0}>
+                            <Play size={16} fill="white" /> Start Timer
+                        </button>
+                    ) : (
+                        <button onClick={handleTimerStartPause} style={{...styles.controlBtn, ...styles.pauseBtn}}>
+                            <Pause size={16} fill="white" /> Pause
+                        </button>
+                    )}
+                    <button onClick={handleTimerStopSave} style={{...styles.controlBtn, ...styles.stopBtn}} disabled={totalTat === 0 && timeLeft === 0}>
+                        <Square size={16} fill="white" /> Stop & Save as Completed
+                    </button>
+                  </div>
+
+                  {/* EXTRA FIELDS */}
+                  <div style={{ marginBottom: '16px' }}>
+                      <label style={styles.label}>Link (Optional)</label>
+                      <input type="url" style={styles.input} placeholder="https://..." value={timerData.link} onChange={e => setTimerData({...timerData, link: e.target.value})} />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* ENTRY MODAL (for manual adds/edits) */}
             {showEntryModal && (
               <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(15, 23, 42, 0.7)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 }}>
                 <div style={{ backgroundColor: 'white', borderRadius: '16px', width: '100%', maxWidth: '480px', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)', overflow: 'hidden' }}>
@@ -480,27 +701,9 @@ export default function App() {
                         <th style={{...styles.th, width: `${colWidth}px`, position: 'relative'}}>
                           <div style={{display:'flex', justifyContent:'space-between', alignItems:'center'}}>
                             File Name
-                            {/* Visual Grip Icon */}
                             <GripVertical size={14} style={{color:'#94a3b8', marginRight:'4px'}} />
                           </div>
-
-                          {/* The Actual Clickable Area */}
-                          <div
-                            onMouseDown={startResizing}
-                            style={{
-                              position: 'absolute',
-                              right: 0,
-                              top: 0,
-                              bottom: 0,
-                              width: '8px', 
-                              cursor: 'col-resize',
-                              zIndex: 10,
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                            }}
-                          >
-                            {/* The Visible Line */}
+                          <div onMouseDown={startResizing} style={{position:'absolute', right:0, top:0, bottom:0, width:'8px', cursor:'col-resize', zIndex:10, display:'flex', alignItems:'center', justifyContent:'center'}}>
                             <div style={{width:'2px', height:'100%', backgroundColor:'#0f172a', opacity: 0.3}} />
                           </div>
                         </th>
