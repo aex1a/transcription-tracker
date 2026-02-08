@@ -6,11 +6,10 @@ import {
   CheckCircle2, Clock, AlertCircle, Loader2, X, CalendarDays, Settings
 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
-
+import { Analytics } from "@vercel/analytics/next"
 // --- Utility Functions ---
 
 // 1. GENERATE INVISIBLE ID
-// This checks if the user already has an ID. If not, it makes one.
 const getDeviceId = () => {
   let id = localStorage.getItem('trackscribe_device_id');
   if (!id) {
@@ -20,10 +19,11 @@ const getDeviceId = () => {
   return id;
 };
 
+// UPDATED: Now returns 3 decimal places (e.g. 0.849)
 const formatDecimalHours = (totalSeconds) => {
-  if (!totalSeconds) return '0.00';
+  if (!totalSeconds) return '0.000';
   const hours = totalSeconds / 3600;
-  return hours.toFixed(2);
+  return hours.toFixed(3); 
 };
 
 const formatDuration = (totalSeconds) => {
@@ -97,13 +97,12 @@ export default function App() {
 
   const fetchJobs = async () => {
     setLoading(true);
-    const deviceId = getDeviceId(); // Get the invisible ID
+    const deviceId = getDeviceId(); 
 
-    // Filter: Only ask Supabase for rows that have this device ID
     let { data, error } = await supabase
       .from('jobs')
       .select('*')
-      .eq('user_id', deviceId) // <--- THIS IS THE PRIVACY FILTER
+      .eq('user_id', deviceId) 
       .order('created_at', { ascending: false });
 
     if (!error) setJobs(data || []);
@@ -128,7 +127,7 @@ export default function App() {
       hours: h, minutes: m, seconds: s, date: formData.date, 
       link: formData.link, notes: formData.notes, status: formData.status, 
       total_seconds: totalSeconds, total_minutes: Math.floor(totalSeconds / 60),
-      user_id: deviceId // <--- Save with the invisible ID
+      user_id: deviceId 
     };
 
     if (isEditing) await supabase.from('jobs').update(payload).eq('id', isEditing);
