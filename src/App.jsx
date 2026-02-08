@@ -116,7 +116,7 @@ export default function App() {
 
   // --- TIMER LOGIC STATE ---
   const [timerData, setTimerData] = useState({
-    file_name: '', // Added back to state
+    file_name: '', 
     client: 'Mantis', durationString: '', link: ''
   });
   const [timerStage, setTimerStage] = useState('FR'); // 'FR' -> 'SV'
@@ -144,7 +144,7 @@ export default function App() {
     return () => clearInterval(timerIntervalRef.current);
   }, [timerRunning, timeLeft]);
 
-  // --- TAT CALCULATOR ---
+  // --- TAT CALCULATOR & AUTO-START LOGIC ---
   const calculateTatForStage = (stage) => {
     const audioSeconds = parseDurationStringToSeconds(timerData.durationString);
     if (audioSeconds === 0) {
@@ -155,16 +155,33 @@ export default function App() {
     const multiplier = stage === 'FR' ? 0.5 : 1.5;
     const calculatedTat = Math.round(audioSeconds * multiplier);
     setTotalTat(calculatedTat);
+    
+    // Only update timeLeft if timer isn't already running
     if (!timerRunning) {
         setTimeLeft(calculatedTat);
     }
   };
 
   useEffect(() => {
+    // 1. Calculate TAT whenever inputs change
     if (!timerRunning) {
         calculateTatForStage(timerStage);
     }
-  }, [timerData.durationString, timerStage]);
+
+    // 2. AUTO-START: If in First Review and valid time (8 chars = HH:MM:SS) is entered
+    if (timerStage === 'FR' && timerData.durationString.length === 8 && !timerRunning) {
+        const secs = parseDurationStringToSeconds(timerData.durationString);
+        if (secs > 0) {
+            setTimerRunning(true);
+        }
+    }
+
+    // 3. AUTO-START: If switched to Speaker Verified (SV), start immediately
+    if (timerStage === 'SV' && !timerRunning && totalTat > 0) {
+        setTimerRunning(true);
+    }
+
+  }, [timerData.durationString, timerStage, totalTat]); // Dependencies for auto-logic
 
   // --- RESIZE LOGIC ---
   useEffect(() => {
@@ -210,7 +227,7 @@ export default function App() {
   // STEP 1: FINISH FR
   const handleFinishFR = async () => {
     if (totalTat === 0) return;
-    setTimerRunning(false);
+    setTimerRunning(false); // Stop FR Timer
     clearInterval(timerIntervalRef.current);
 
     setLoading(true);
@@ -221,7 +238,7 @@ export default function App() {
     const m = Math.floor((audioSeconds % 3600) / 60);
     const s = audioSeconds % 60;
 
-    // USE INPUT NAME OR DEFAULT TO 'Unnamed File'
+    // Smart Naming
     const finalName = timerData.file_name.trim() || 'Unnamed File';
 
     const payload = { 
@@ -244,7 +261,7 @@ export default function App() {
     } else {
         await fetchJobs();
         setActiveJobId(data[0].id); 
-        setTimerStage('SV'); 
+        setTimerStage('SV'); // This triggers the useEffect to Auto-Start SV
     }
     setLoading(false);
   };
@@ -268,7 +285,7 @@ export default function App() {
         alert("Error updating: " + error.message);
     } else {
         await fetchJobs();
-        setTimerData({ file_name: '', client: 'Mantis', durationString: '', link: '' }); // Reset fields
+        setTimerData({ file_name: '', client: 'Mantis', durationString: '', link: '' }); 
         setTimerStage('FR');
         setActiveJobId(null);
         setTimeLeft(0);
