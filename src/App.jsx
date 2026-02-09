@@ -52,27 +52,64 @@ const parseDurationStringToSeconds = (timeString) => {
   return (h || 0) * 3600 + (m || 0) * 60 + (s || 0);
 };
 
-const formatDate = (dateString) => {
+// UPDATED: Format Date + Time (PHT & EST)
+const formatDateWithTime = (dateString, timestamp) => {
   if (!dateString) return '';
-  return new Date(dateString).toLocaleDateString('en-US', {
+  
+  const datePart = new Date(dateString).toLocaleDateString('en-US', {
     month: 'short', day: 'numeric', year: 'numeric'
   });
+
+  if (!timestamp) return datePart; // Fallback for old entries
+
+  const dateObj = new Date(timestamp);
+  
+  // Format PHT (UTC+8)
+  const phtTime = dateObj.toLocaleTimeString('en-US', {
+    timeZone: 'Asia/Manila',
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true
+  });
+
+  // Format EST (UTC-5)
+  const estTime = dateObj.toLocaleTimeString('en-US', {
+    timeZone: 'America/New_York',
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true
+  });
+
+  return (
+    <div>
+      <div style={{fontWeight: 'bold'}}>{datePart}</div>
+      <div style={{fontSize: '10px', opacity: 0.8, marginTop: '2px'}}>PHT: {phtTime}</div>
+      <div style={{fontSize: '10px', opacity: 0.6}}>EST: {estTime}</div>
+    </div>
+  );
 };
+
+const formatDate = (dateString) => {
+    if (!dateString) return '';
+    return new Date(dateString).toLocaleDateString('en-US', {
+      month: 'short', day: 'numeric', year: 'numeric'
+    });
+};
+
 
 // --- Color Themes ---
 const themes = {
   light: {
-    // HYBRID SPOTIFY THEME: White Sidebar, Black Content
-    bg: '#191414',           // Main Content: Spotify Black
-    text: '#ffffff',         // Main Text: White
-    mutedText: '#b3b3b3',    // Light Grey
-    sidebarBg: '#ffffff',    // Sidebar: White
-    sidebarText: '#191414',  // Sidebar Text: Black
+    bg: '#191414',           
+    text: '#ffffff',         
+    mutedText: '#b3b3b3',
+    sidebarBg: '#ffffff',    
+    sidebarText: '#191414',
     sidebarActiveBg: '#f0f0f0', 
     sidebarActiveText: '#191414',
-    cardBg: '#212121',       // Cards: Dark Grey
-    border: '#535353',       // Dark Grey borders
-    accent: '#1db954',       // Spotify Green
+    cardBg: '#212121',       
+    border: '#535353',       
+    accent: '#1db954',       
     accentSec: '#ffffff',
     tableHeaderBg: '#1db954',
     tableHeaderText: '#ffffff',
@@ -80,20 +117,19 @@ const themes = {
     statCardShadow: '0 4px 12px rgba(0,0,0,0.5)'
   },
   dark: {
-    // NEW DARK MODE PALETTE
-    bg: '#141e2d',           // Background outside sidebar
-    text: '#ffffff',         // Font texts (White)
+    bg: '#141e2d',           
+    text: '#ffffff',         
     mutedText: '#9ca3af',
-    sidebarBg: '#ffffff',    // White sidebar to support dark text
-    sidebarText: '#212529',  // Sidebar text unselected
-    sidebarActiveBg: '#79c142', // Background if selected in sidebar
-    sidebarActiveText: '#ffffff', // Text color on selected background
-    cardBg: '#212529',       // File history background / contents
-    border: '#79c142',       // Green borders for contrast
-    accent: '#79c142',       // Green accent
+    sidebarBg: '#ffffff',    
+    sidebarText: '#212529',  
+    sidebarActiveBg: '#79c142', 
+    sidebarActiveText: '#ffffff', 
+    cardBg: '#212529',       
+    border: '#79c142',       
+    accent: '#79c142',       
     accentSec: '#ffffff',
-    tableHeaderBg: '#212529', // Match card bg
-    tableHeaderText: '#79c142', // Green header text
+    tableHeaderBg: '#212529', 
+    tableHeaderText: '#79c142', 
     unnamedRowBg: '#3f1a1a', 
     statCardShadow: '0 4px 6px -1px rgba(0,0,0,0.5)'
   }
@@ -418,12 +454,14 @@ export default function App() {
     if (!finalName) {
         finalName = generateAutoName(jobs);
     }
-
+    
+    // UPDATED: Save completion timestamp
     const payload = { 
       file_name: finalName, 
       client: timerData.client, 
       hours: h, minutes: m, seconds: s, 
       date: new Date().toISOString().split('T')[0], 
+      created_at: new Date().toISOString(), // TIMESTAMP ADDED
       link: timerData.link, 
       status: 'In Progress', 
       notes: 'First Review Completed',
@@ -467,12 +505,14 @@ export default function App() {
     if (!finalName) {
         finalName = generateAutoName(jobs);
     }
-
+    
+    // UPDATED: Save completion timestamp for Manual Entry too
     const payload = { 
       file_name: finalName, 
       client: formData.client, 
       hours: h, minutes: m, seconds: s, 
       date: formData.date, 
+      created_at: new Date().toISOString(), // TIMESTAMP ADDED
       link: formData.link, 
       notes: formData.notes, 
       status: formData.status, 
@@ -597,7 +637,7 @@ export default function App() {
         <div style={{ padding: '16px', background: currentTheme.sidebarBg, borderBottom: `1px solid ${currentTheme.border}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', zIndex: 60 }}>
             <div style={{display:'flex', alignItems:'center', gap:'12px'}}>
                 <button onClick={() => setShowMobileMenu(!showMobileMenu)} style={{border:'none', background:'none'}}><Menu size={24} color={currentTheme.text}/></button>
-                <span style={{fontWeight:'bold', color: currentTheme.text}}>Tracker</span>
+                <span style={{fontWeight:'bold', color: currentTheme.text}}>TrackScribe</span>
             </div>
             <button onClick={openNewEntry} style={{backgroundColor: currentTheme.accent, color: darkMode ? '#141e2d' : '#ffffff', border:'none', padding:'6px 12px', borderRadius:'6px', fontSize:'12px'}}>+ Add</button>
         </div>
@@ -607,7 +647,7 @@ export default function App() {
         <div style={{ padding: '24px', borderBottom: `1px solid ${currentTheme.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <h2 style={{ fontSize: '18px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '10px', margin: 0 }}>
             <div style={{ background: currentTheme.accent, width: '28px', height: '28px', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: darkMode ? '#141e2d' : '#ffffff', fontWeight: '900' }}>T</div>
-            <span style={{color: currentTheme.sidebarText, fontFamily: 'Circular, sans-serif', fontWeight: '900', letterSpacing:'-0.5px'}}>Tracker</span>
+            <span style={{color: currentTheme.sidebarText, fontFamily: 'Circular, sans-serif', fontWeight: '900', letterSpacing:'-0.5px'}}>TrackScribe</span>
           </h2>
           <button onClick={() => setDarkMode(!darkMode)} style={{background:'transparent', border:'none', cursor:'pointer', color: currentTheme.sidebarText}}>
             {darkMode ? <Sun size={20}/> : <Moon size={20}/>}
@@ -848,7 +888,8 @@ export default function App() {
                         <th style={styles.th} onClick={() => requestSort('date')}><div style={styles.thClickable}>Date <SortIcon column="date" /></div></th>
                         <th style={{...styles.th, width: `${colWidth}px`, position: 'relative'}}><div style={{display:'flex', justifyContent:'space-between', alignItems:'center'}}>File Name<GripVertical size={14} style={{color: currentTheme.text, marginRight:'4px', opacity: 0.7}} /></div><div onMouseDown={startResizing} style={{position:'absolute', right:0, top:0, bottom:0, width:'8px', cursor:'col-resize', zIndex:10, display:'flex', alignItems:'center', justifyContent:'center'}}><div style={{width:'2px', height:'100%', backgroundColor: currentTheme.text, opacity: 0.3}} /></div></th>
                         <th style={{...styles.th, display: isMobile ? 'none' : 'table-cell'}} onClick={() => requestSort('client')}><div style={styles.thClickable}>Type <SortIcon column="client" /></div></th>
-                        <th style={styles.th}>Duration</th>
+                        <th style={{...styles.th, display: isMobile ? 'none' : 'table-cell'}}>Duration</th>
+                        <th style={{...styles.th, display: isMobile ? 'none' : 'table-cell'}}>Total Hours (Dec)</th>
                         <th style={styles.th} onClick={() => requestSort('status')}><div style={styles.thClickable}>Status <SortIcon column="status" /></div></th>
                         <th style={{...styles.th, display: isMobile ? 'none' : 'table-cell'}}>Link</th>
                         <th style={{...styles.th, textAlign: 'right'}}>EDIT/DELETE</th>
@@ -857,10 +898,14 @@ export default function App() {
                     <tbody>
                       {sortedJobs.length > 0 ? sortedJobs.map(job => (
                         <tr key={job.id} style={{ borderBottom: `1px solid ${currentTheme.border}`, backgroundColor: job.file_name.startsWith('Unnamed File') ? currentTheme.unnamedRowBg : currentTheme.cardBg }}>
-                          <td style={styles.td}>{formatDate(job.date)}</td>
+                          <td style={styles.td}>
+                            {/* UPDATED: Pass created_at timestamp for time display */}
+                            {formatDateWithTime(job.date, job.created_at)}
+                          </td>
                           <td style={{...styles.td, width: `${colWidth}px`, minWidth: `${colWidth}px`, maxWidth: `${colWidth}px`}}><div style={styles.tdWrapper} className="no-scrollbar" title={job.file_name}>{job.file_name}</div></td>
                           <td style={{...styles.td, display: isMobile ? 'none' : 'table-cell'}}>{job.client||'-'}</td>
-                          <td style={{...styles.td, fontFamily: 'monospace', color: currentTheme.accent}}>{formatDuration(job.total_seconds)}</td>
+                          <td style={{...styles.td, display: isMobile ? 'none' : 'table-cell', fontFamily: 'monospace', color: currentTheme.accent}}>{formatDuration(job.total_seconds)}</td>
+                          <td style={{...styles.td, display: isMobile ? 'none' : 'table-cell', fontFamily: 'monospace', color: currentTheme.text}}>{formatDecimalHours(job.total_seconds)}</td>
                           <td style={styles.td}><StatusBadge status={job.status} darkMode={darkMode} /></td>
                           <td style={{...styles.td, display: isMobile ? 'none' : 'table-cell'}}>{job.link && <a href={job.link} target="_blank"><ExternalLink size={12} color={currentTheme.accent}/></a>}</td>
                           <td style={{...styles.td, textAlign: 'right'}}><button onClick={() => handleEdit(job)} style={{background:'none', border:'none', cursor:'pointer', marginRight:'8px', color: currentTheme.accent}}><Edit2 size={16}/></button><button onClick={() => handleDelete(job.id)} style={{background:'none', border:'none', cursor:'pointer', color:'#ef4444'}}><Trash2 size={16}/></button></td></tr>)) : (<tr><td colSpan="7" style={{padding:'24px', textAlign:'center', color:'#94a3b8'}}>No files match your filters.</td></tr>)}
