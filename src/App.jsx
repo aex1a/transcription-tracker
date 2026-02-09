@@ -148,8 +148,6 @@ const StatCard = ({ title, value, icon: Icon, color, theme }) => (
 );
 
 const StatusBadge = ({ status, darkMode }) => {
-  // Light Mode (Hybrid): Green/White
-  // Dark Mode: Forest/White
   const c = { 
     'Completed': {
         bg: darkMode ? '#2a3c2e' : 'rgba(29, 185, 84, 0.2)', 
@@ -309,19 +307,24 @@ export default function App() {
     setLoading(false);
   };
 
+  // --- AUTO NAME GENERATOR ---
   const generateAutoName = (existingJobs) => {
-    const unnamedDocs = existingJobs.filter(j => j.file_name.startsWith("Unnamed File"));
+    const unnamedDocs = existingJobs.filter(j => j.file_name && j.file_name.startsWith("Unnamed File"));
     if (unnamedDocs.length === 0) return "Unnamed File 1";
+    
     const nums = unnamedDocs.map(j => {
         const match = j.file_name.match(/Unnamed File (\d+)/);
         if (match) return parseInt(match[1]);
         if (j.file_name === "Unnamed File") return 1;
         return 0; 
     });
-    const maxNum = Math.max(...nums);
+    
+    // Safety check if array is empty after map
+    const maxNum = nums.length > 0 ? Math.max(...nums) : 0;
     return `Unnamed File ${maxNum + 1}`;
   };
 
+  // --- EXPORT LOGIC ---
   const downloadBillingXLSX = () => {
     const cycle = getBillingCycle();
     const cycleJobs = jobs.filter(j => { 
@@ -447,29 +450,62 @@ export default function App() {
     setLoading(false);
   };
 
+  // --- MANUAL ENTRY SAVE (Fixed) ---
   const handleSave = async (e) => {
     e.preventDefault();
     setLoading(true);
     const deviceId = getDeviceId();
     let h = 0, m = 0, s = 0;
-    const parts = formData.timeString.split(':').map(Number);
-    if (parts.length === 3) { h = parts[0]; m = parts[1]; s = parts[2]; }
-    else if (parts.length === 2) { m = parts[0]; s = parts[1]; }
-    else { m = parts[0]; }
+    
+    // Fix: Handle timeString parsing safely
+    if (formData.timeString) {
+      const parts = formData.timeString.split(':').map(Number);
+      if (parts.length === 3) { h = parts[0]; m = parts[1]; s = parts[2]; }
+      else if (parts.length === 2) { m = parts[0]; s = parts[1]; }
+      else { m = parts[0]; }
+    }
+    
     const totalSeconds = (h * 3600) + (m * 60) + s;
 
-    let finalName = formData.file_name.trim();
-    if (!finalName && !isEditing) { finalName = generateAutoName(jobs); } else if (!finalName && isEditing) { finalName = generateAutoName(jobs); }
+    // FIX: Explicit check for empty name logic
+    let finalName = formData.file_name ? formData.file_name.trim() : '';
+    
+    // If name is empty, generate one using current jobs list
+    if (!finalName) {
+        finalName = generateAutoName(jobs);
+    }
 
-    const payload = { file_name: finalName, client: formData.client, hours: h, minutes: m, seconds: s, date: formData.date, link: formData.link, notes: formData.notes, status: formData.status, total_seconds: totalSeconds, total_minutes: Math.floor(totalSeconds / 60), user_id: deviceId };
+    const payload = { 
+      file_name: finalName, 
+      client: formData.client, 
+      hours: h, minutes: m, seconds: s, 
+      date: formData.date, 
+      link: formData.link, 
+      notes: formData.notes, 
+      status: formData.status, 
+      total_seconds: totalSeconds, 
+      total_minutes: Math.floor(totalSeconds / 60), 
+      user_id: deviceId 
+    };
     
-    if (isEditing) await supabase.from('jobs').update(payload).eq('id', isEditing);
-    else await supabase.from('jobs').insert([payload]);
+    let error;
+    if (isEditing) {
+       const res = await supabase.from('jobs').update(payload).eq('id', isEditing);
+       error = res.error;
+    } else {
+       const res = await supabase.from('jobs').insert([payload]);
+       error = res.error;
+    }
     
-    await fetchJobs();
-    setFormData({ file_name: '', client: 'Mantis', timeString: '', date: new Date().toISOString().split('T')[0], link: '', notes: '', status: 'In Progress' });
-    setIsEditing(null);
-    setShowEntryModal(false);
+    if (error) {
+        alert("Failed to save entry: " + error.message);
+    } else {
+        await fetchJobs();
+        setFormData({ file_name: '', client: 'Mantis', timeString: '', date: new Date().toISOString().split('T')[0], link: '', notes: '', status: 'In Progress' });
+        setIsEditing(null);
+        setShowEntryModal(false);
+    }
+    setLoading(false);
   };
 
   const handleDelete = async (id) => { if (confirm('Delete this record?')) { await supabase.from('jobs').delete().eq('id', id); fetchJobs(); } };
@@ -516,7 +552,7 @@ export default function App() {
     navBtnActive: { backgroundColor: currentTheme.sidebarActiveBg, color: currentTheme.sidebarText, fontWeight: '700', opacity: 1, borderLeft: `4px solid ${currentTheme.accent}` },
     
     input: { width: '100%', padding: '10px 14px', borderRadius: '8px', border: `1px solid ${currentTheme.border}`, fontSize: '14px', outline: 'none', backgroundColor: currentTheme.cardBg, boxSizing:'border-box', color: currentTheme.text },
-    label: { display: 'block', marginBottom: '6px', fontSize: '14px', fontWeight: '700', color: currentTheme.text },
+    label: { display: 'block', marginBottom: '6px', fontSize: '14px', fontWeight: '600', color: currentTheme.text },
     
     table: { width: '100%', borderCollapse: 'collapse', backgroundColor: currentTheme.cardBg, borderRadius: '8px', overflow: 'hidden', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)', border: `1px solid ${currentTheme.border}` },
     th: { backgroundColor: currentTheme.tableHeaderBg, color: currentTheme.tableHeaderText, padding: '12px 16px', textAlign: 'left', fontSize: '12px', fontWeight: '900', textTransform: 'uppercase', letterSpacing:'1px', borderBottom: `1px solid ${currentTheme.border}` },
@@ -534,7 +570,7 @@ export default function App() {
     pauseBtn: { backgroundColor: currentTheme.border, color: currentTheme.text },
     stopBtn: { backgroundColor: '#ef4444', color: 'white' },
     stageOption: { display: 'flex', flexDirection: 'column', padding: '15px', borderRadius: '8px', border: `2px solid ${currentTheme.border}`, flex: 1, textAlign:'center' },
-    stageActive: { borderColor: currentTheme.accent, backgroundColor: darkMode ? '#3C3D37' : '#f0fdf4' },
+    stageActive: { borderColor: currentTheme.accent, backgroundColor: darkMode ? '#1e4002' : '#f0fdf4' },
     stageTitle: { fontWeight: 'bold', marginBottom: '4px', color: currentTheme.text },
     stageDesc: { fontSize: '12px', color: currentTheme.mutedText }
   };
@@ -568,7 +604,7 @@ export default function App() {
         <div style={{ padding: '16px', background: currentTheme.sidebarBg, borderBottom: `1px solid ${currentTheme.border}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', zIndex: 60 }}>
             <div style={{display:'flex', alignItems:'center', gap:'12px'}}>
                 <button onClick={() => setShowMobileMenu(!showMobileMenu)} style={{border:'none', background:'none'}}><Menu size={24} color={currentTheme.sidebarText}/></button>
-                <span style={{fontWeight:'bold', color: currentTheme.sidebarText}}>Tracker</span>
+                <span style={{fontWeight:'bold', color: currentTheme.sidebarText}}>TrackScribe</span>
             </div>
             <button onClick={openNewEntry} style={{backgroundColor: currentTheme.accent, color: darkMode ? '#181C14' : '#ffffff', border:'none', padding:'6px 12px', borderRadius:'6px', fontSize:'12px'}}>+ Add</button>
         </div>
@@ -578,7 +614,7 @@ export default function App() {
         <div style={{ padding: '24px', borderBottom: `1px solid ${currentTheme.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <h2 style={{ fontSize: '18px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '10px', margin: 0 }}>
             <div style={{ background: currentTheme.accent, width: '28px', height: '28px', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: darkMode ? '#181C14' : '#ffffff', fontWeight: '900' }}>T</div>
-            <span style={{color: currentTheme.sidebarText, fontFamily: 'Circular, sans-serif', fontWeight: '900', letterSpacing:'-0.5px'}}>Tracker</span>
+            <span style={{color: currentTheme.sidebarText, fontFamily: 'Circular, sans-serif', fontWeight: '900', letterSpacing:'-0.5px'}}>TrackScribe</span>
           </h2>
           <button onClick={() => setDarkMode(!darkMode)} style={{background:'transparent', border:'none', cursor:'pointer', color: currentTheme.sidebarText}}>
             {darkMode ? <Sun size={20}/> : <Moon size={20}/>}
@@ -593,7 +629,7 @@ export default function App() {
       </aside>
       
       {isMobile && showMobileMenu && (
-        <div onClick={() => setShowMobileMenu(false)} style={{position:'fixed', inset:0, background:'rgba(24, 28, 20, 0.8)', zIndex:40}} />
+        <div onClick={() => setShowMobileMenu(false)} style={{position:'fixed', inset:0, background:'rgba(0, 0, 0, 0.8)', zIndex:40}} />
       )}
 
       <main style={styles.main}>
@@ -758,6 +794,42 @@ export default function App() {
                       <label style={styles.label}>Link (Optional)</label>
                       <input type="url" style={styles.input} placeholder="https://..." value={timerData.link} onChange={e => setTimerData({...timerData, link: e.target.value})} disabled={timerStage === 'SV'} />
                   </div>
+                </div>
+              </div>
+            )}
+
+            {showEntryModal && (
+              <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0, 0, 0, 0.7)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 }}>
+                <div style={{ backgroundColor: currentTheme.cardBg, borderRadius: '8px', width: '100%', maxWidth: '480px', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)', border: `1px solid ${currentTheme.border}` }}>
+                  <div style={{ padding: '16px 24px', borderBottom: `1px solid ${currentTheme.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <h2 style={{ margin: 0, fontSize: '16px', fontWeight: 'bold', color: currentTheme.text }}>{isEditing ? 'Edit Entry' : 'New Entry'}</h2>
+                    <button onClick={() => setShowEntryModal(false)} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: currentTheme.text }}><X size={20}/></button>
+                  </div>
+                  <form onSubmit={handleSave} style={{ padding: '24px' }}>
+                    <div style={{ marginBottom: '16px' }}>
+                      <label style={styles.label}>File Name</label>
+                      <input 
+                        style={styles.input} 
+                        placeholder="e.g. Meeting_Audio_01 (Leave empty for Auto Name)" 
+                        value={formData.file_name} 
+                        onChange={e => setFormData({...formData, file_name: e.target.value})} 
+                      />
+                    </div>
+                    <div style={{ marginBottom: '16px' }}>
+                      <label style={styles.label}>File Type</label>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                        <div onClick={() => setFormData({...formData, client: 'Mantis'})} style={{...styles.radioLabel, ...(formData.client === 'Mantis' ? styles.radioActive : {})}}><div style={{width:'16px', height:'16px', borderRadius:'50%', border: `2px solid ${currentTheme.border}`, borderColor: formData.client === 'Mantis' ? currentTheme.accent : currentTheme.border, display:'flex', alignItems:'center', justifyContent:'center'}}>{formData.client === 'Mantis' && <div style={{width:'8px', height:'8px', borderRadius:'50%', backgroundColor: currentTheme.accent}} />}</div>Mantis</div>
+                        <div onClick={() => setFormData({...formData, client: 'Cricket'})} style={{...styles.radioLabel, ...(formData.client === 'Cricket' ? styles.radioActive : {})}}><div style={{width:'16px', height:'16px', borderRadius:'50%', border: `2px solid ${currentTheme.border}`, borderColor: formData.client === 'Cricket' ? currentTheme.accent : currentTheme.border, display:'flex', alignItems:'center', justifyContent:'center'}}>{formData.client === 'Cricket' && <div style={{width:'8px', height:'8px', borderRadius:'50%', backgroundColor: currentTheme.accent}} />}</div>Cricket</div>
+                      </div>
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
+                      <div><label style={styles.label}>Duration (HH:MM:SS)</label><input style={{...styles.input, fontFamily: 'monospace'}} placeholder="00:00:00" maxLength={8} value={formData.timeString} onChange={handleTimeChange} /></div>
+                      <div><label style={styles.label}>Date</label><input type="date" style={styles.input} value={formData.date} onChange={e => setFormData({...formData, date: e.target.value})} /></div>
+                    </div>
+                    <div style={{ marginBottom: '16px' }}><label style={styles.label}>Link</label><input type="url" style={styles.input} placeholder="https://..." value={formData.link} onChange={e => setFormData({...formData, link: e.target.value})} /></div>
+                    <div style={{ marginBottom: '24px' }}><label style={styles.label}>Status</label><select style={styles.input} value={formData.status} onChange={e => setFormData({...formData, status: e.target.value})}><option>In Progress</option><option>Pending QA</option><option>Completed</option></select></div>
+                    <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}><button type="button" onClick={() => setShowEntryModal(false)} style={{ padding: '10px 16px', border: 'none', background: 'transparent', color: currentTheme.text, fontWeight: '600', cursor: 'pointer' }}>Cancel</button><button type="submit" style={{ padding: '10px 20px', border: 'none', background: currentTheme.accent, color: darkMode ? '#112600' : '#ffffff', borderRadius: '50px', fontWeight: '600', cursor: 'pointer', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.2)' }}>{loading ? 'Saving...' : 'Save Entry'}</button></div>
+                  </form>
                 </div>
               </div>
             )}
