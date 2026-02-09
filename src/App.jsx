@@ -66,33 +66,35 @@ const themes = {
     bg: '#191414',           // Main Content: Spotify Black
     text: '#ffffff',         // Main Text: White
     mutedText: '#b3b3b3',    // Light Grey
-    sidebarBg: '#ffffff',    // Sidebar: White (Requested)
+    sidebarBg: '#ffffff',    // Sidebar: White
     sidebarText: '#191414',  // Sidebar Text: Black
-    sidebarActiveBg: '#f0f0f0', // Very light grey for active sidebar item
-    cardBg: '#212121',       // Cards: Dark Grey to fit Spotify feel
+    sidebarActiveBg: '#f0f0f0', 
+    sidebarActiveText: '#191414',
+    cardBg: '#212121',       // Cards: Dark Grey
     border: '#535353',       // Dark Grey borders
     accent: '#1db954',       // Spotify Green
     accentSec: '#ffffff',
-    tableHeaderBg: '#1db954',// Green Header
+    tableHeaderBg: '#1db954',
     tableHeaderText: '#ffffff',
-    unnamedRowBg: '#450a0a', // Dark Reddish for dark card background
+    unnamedRowBg: '#450a0a', 
     statCardShadow: '0 4px 12px rgba(0,0,0,0.5)'
   },
   dark: {
-    // DEEP OCEAN / FOREST THEME
-    bg: '#001524',           // Deep Navy/Black
-    text: '#ffffff',         // White fonts
+    // NEW DARK MODE PALETTE
+    bg: '#141e2d',           // Background outside sidebar
+    text: '#ffffff',         // Font texts (White)
     mutedText: '#9ca3af',
-    sidebarBg: '#445D48',    // Muted Forest Green
-    sidebarText: '#ffffff',
-    sidebarActiveBg: '#354a38',
-    cardBg: '#445D48',       // Cards match sidebar
-    border: '#2a3c2e',       // Darker green border
-    accent: '#ffffff',       // White accents
-    accentSec: '#445D48',
-    tableHeaderBg: '#354a38',
-    tableHeaderText: '#ffffff',
-    unnamedRowBg: '#3f1a1a', // Dark Reddish
+    sidebarBg: '#ffffff',    // White sidebar to support dark text
+    sidebarText: '#212529',  // Sidebar text unselected
+    sidebarActiveBg: '#79c142', // Background if selected in sidebar
+    sidebarActiveText: '#ffffff', // Text color on selected background
+    cardBg: '#212529',       // File history background / contents
+    border: '#79c142',       // Green borders for contrast
+    accent: '#79c142',       // Green accent
+    accentSec: '#ffffff',
+    tableHeaderBg: '#212529', // Match card bg
+    tableHeaderText: '#79c142', // Green header text
+    unnamedRowBg: '#3f1a1a', 
     statCardShadow: '0 4px 6px -1px rgba(0,0,0,0.5)'
   }
 };
@@ -101,8 +103,7 @@ const themes = {
 
 const BillingCard = ({ label, count, hours, onEdit, onExport, theme, darkMode }) => (
   <div className="billing-card" style={{ 
-    // Light Mode (Hybrid): Black -> Spotify Green | Dark Mode: Navy -> Forest
-    background: darkMode ? 'linear-gradient(135deg, #001524 0%, #445D48 100%)' : 'linear-gradient(135deg, #191414 0%, #1db954 100%)', 
+    background: darkMode ? 'linear-gradient(135deg, #141e2d 0%, #212529 100%)' : 'linear-gradient(135deg, #191414 0%, #1db954 100%)', 
     borderRadius: '16px', 
     padding: '24px', 
     color: '#ffffff', 
@@ -150,13 +151,13 @@ const StatCard = ({ title, value, icon: Icon, color, theme }) => (
 const StatusBadge = ({ status, darkMode }) => {
   const c = { 
     'Completed': {
-        bg: darkMode ? '#2a3c2e' : 'rgba(29, 185, 84, 0.2)', 
-        t: '#ffffff', 
-        b: darkMode ? '#ffffff' : '#1db954'
+        bg: darkMode ? '#79c142' : 'rgba(29, 185, 84, 0.2)', 
+        t: darkMode ? '#141e2d' : '#ffffff', 
+        b: darkMode ? '#79c142' : '#1db954'
     }, 
     'In Progress': {
         bg: '#ffffff', 
-        t: '#000000', 
+        t: '#212529', 
         b: '#ffffff'
     }, 
     'Pending QA': {
@@ -307,7 +308,6 @@ export default function App() {
     setLoading(false);
   };
 
-  // --- AUTO NAME GENERATOR ---
   const generateAutoName = (existingJobs) => {
     const unnamedDocs = existingJobs.filter(j => j.file_name && j.file_name.startsWith("Unnamed File"));
     if (unnamedDocs.length === 0) return "Unnamed File 1";
@@ -319,12 +319,10 @@ export default function App() {
         return 0; 
     });
     
-    // Safety check if array is empty after map
     const maxNum = nums.length > 0 ? Math.max(...nums) : 0;
     return `Unnamed File ${maxNum + 1}`;
   };
 
-  // --- EXPORT LOGIC ---
   const downloadBillingXLSX = () => {
     const cycle = getBillingCycle();
     const cycleJobs = jobs.filter(j => { 
@@ -450,14 +448,12 @@ export default function App() {
     setLoading(false);
   };
 
-  // --- MANUAL ENTRY SAVE (Fixed) ---
   const handleSave = async (e) => {
     e.preventDefault();
     setLoading(true);
     const deviceId = getDeviceId();
     let h = 0, m = 0, s = 0;
     
-    // Fix: Handle timeString parsing safely
     if (formData.timeString) {
       const parts = formData.timeString.split(':').map(Number);
       if (parts.length === 3) { h = parts[0]; m = parts[1]; s = parts[2]; }
@@ -466,11 +462,8 @@ export default function App() {
     }
     
     const totalSeconds = (h * 3600) + (m * 60) + s;
-
-    // FIX: Explicit check for empty name logic
     let finalName = formData.file_name ? formData.file_name.trim() : '';
     
-    // If name is empty, generate one using current jobs list
     if (!finalName) {
         finalName = generateAutoName(jobs);
     }
@@ -543,16 +536,16 @@ export default function App() {
   const styles = {
     container: { fontFamily: '"Circular", "Helvetica Neue", "Helvetica", "Arial", sans-serif', backgroundColor: currentTheme.bg, minHeight: '100vh', display: 'flex', flexDirection: 'column' },
     
-    // Sidebar: Light Mode = White (#ffffff) | Dark Mode = Black/Green (#181C14)
+    // Sidebar:
     sidebar: { width: '250px', backgroundColor: currentTheme.sidebarBg, borderRight: `1px solid ${currentTheme.border}`, display: 'flex', flexDirection: 'column', position: 'fixed', height: '100%', zIndex: 50, transition: 'transform 0.3s ease', transform: isMobile && !showMobileMenu ? 'translateX(-100%)' : 'translateX(0)' },
     
     main: { flex: 1, marginLeft: isMobile ? '0' : '250px', padding: isMobile ? '1rem' : '2rem', overflowY: 'auto' },
     
     navBtn: { display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 20px', width: '100%', background: 'transparent', border: 'none', color: currentTheme.sidebarText, cursor: 'pointer', fontSize: '14px', fontWeight: '500', transition: 'all 0.2s', margin: '4px 0', borderRadius: '0 20px 20px 0', opacity: 0.8 },
-    navBtnActive: { backgroundColor: currentTheme.sidebarActiveBg, color: currentTheme.sidebarText, fontWeight: '700', opacity: 1, borderLeft: `4px solid ${currentTheme.accent}` },
+    navBtnActive: { backgroundColor: currentTheme.sidebarActiveBg, color: currentTheme.sidebarActiveText || currentTheme.sidebarText, fontWeight: '700', opacity: 1, borderLeft: `4px solid ${currentTheme.accent}` },
     
     input: { width: '100%', padding: '10px 14px', borderRadius: '8px', border: `1px solid ${currentTheme.border}`, fontSize: '14px', outline: 'none', backgroundColor: currentTheme.cardBg, boxSizing:'border-box', color: currentTheme.text },
-    label: { display: 'block', marginBottom: '6px', fontSize: '14px', fontWeight: '600', color: currentTheme.text },
+    label: { display: 'block', marginBottom: '6px', fontSize: '14px', fontWeight: '700', color: currentTheme.text },
     
     table: { width: '100%', borderCollapse: 'collapse', backgroundColor: currentTheme.cardBg, borderRadius: '8px', overflow: 'hidden', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)', border: `1px solid ${currentTheme.border}` },
     th: { backgroundColor: currentTheme.tableHeaderBg, color: currentTheme.tableHeaderText, padding: '12px 16px', textAlign: 'left', fontSize: '12px', fontWeight: '900', textTransform: 'uppercase', letterSpacing:'1px', borderBottom: `1px solid ${currentTheme.border}` },
@@ -560,17 +553,17 @@ export default function App() {
     td: { padding: '14px 16px', borderBottom: `1px solid ${currentTheme.border}`, fontSize: '14px', color: currentTheme.text },
     tdWrapper: { width: '100%', height: '100%', whiteSpace: 'nowrap', overflowX: 'auto', overflowY: 'hidden', display: 'block' },
     radioLabel: { display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', cursor: 'pointer', padding: '10px', borderRadius: '8px', border: `1px solid ${currentTheme.border}`, backgroundColor: currentTheme.cardBg, color: currentTheme.text },
-    radioActive: { backgroundColor: currentTheme.accent, borderColor: currentTheme.accent, color: darkMode ? '#181C14' : '#ffffff', fontWeight: '700' },
-    primaryBtn: { backgroundColor: currentTheme.accent, color: darkMode ? '#181C14' : '#ffffff', padding: '8px 16px', borderRadius: '50px', border: 'none', fontWeight: '700', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', boxShadow: '0 2px 4px rgba(0, 0, 0, 0.3)', textTransform: 'uppercase', letterSpacing: '1px' },
+    radioActive: { backgroundColor: currentTheme.accent, borderColor: currentTheme.accent, color: darkMode ? '#141e2d' : '#ffffff', fontWeight: '700' },
+    primaryBtn: { backgroundColor: currentTheme.accent, color: darkMode ? '#141e2d' : '#ffffff', padding: '8px 16px', borderRadius: '50px', border: 'none', fontWeight: '700', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', boxShadow: '0 2px 4px rgba(0, 0, 0, 0.3)', textTransform: 'uppercase', letterSpacing: '1px' },
     
     timerDisplay: { fontSize: '48px', fontWeight: '900', fontFamily: 'monospace', color: currentTheme.accent, textAlign: 'center', margin: '20px 0' },
     timerControls: { display: 'flex', justifyContent: 'center', gap: '20px', marginBottom: '20px' },
     controlBtn: { display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 20px', borderRadius: '50px', border: 'none', fontWeight: '700', cursor: 'pointer', fontSize: '14px', letterSpacing:'0.5px' },
-    startBtn: { backgroundColor: currentTheme.accent, color: darkMode ? '#181C14' : '#ffffff' },
+    startBtn: { backgroundColor: currentTheme.accent, color: darkMode ? '#141e2d' : '#ffffff' },
     pauseBtn: { backgroundColor: currentTheme.border, color: currentTheme.text },
     stopBtn: { backgroundColor: '#ef4444', color: 'white' },
     stageOption: { display: 'flex', flexDirection: 'column', padding: '15px', borderRadius: '8px', border: `2px solid ${currentTheme.border}`, flex: 1, textAlign:'center' },
-    stageActive: { borderColor: currentTheme.accent, backgroundColor: darkMode ? '#1e4002' : '#f0fdf4' },
+    stageActive: { borderColor: currentTheme.accent, backgroundColor: darkMode ? '#212529' : '#f0fdf4' },
     stageTitle: { fontWeight: 'bold', marginBottom: '4px', color: currentTheme.text },
     stageDesc: { fontSize: '12px', color: currentTheme.mutedText }
   };
@@ -603,17 +596,17 @@ export default function App() {
       {isMobile && (
         <div style={{ padding: '16px', background: currentTheme.sidebarBg, borderBottom: `1px solid ${currentTheme.border}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', zIndex: 60 }}>
             <div style={{display:'flex', alignItems:'center', gap:'12px'}}>
-                <button onClick={() => setShowMobileMenu(!showMobileMenu)} style={{border:'none', background:'none'}}><Menu size={24} color={currentTheme.sidebarText}/></button>
-                <span style={{fontWeight:'bold', color: currentTheme.sidebarText}}>Tracker</span>
+                <button onClick={() => setShowMobileMenu(!showMobileMenu)} style={{border:'none', background:'none'}}><Menu size={24} color={currentTheme.text}/></button>
+                <span style={{fontWeight:'bold', color: currentTheme.text}}>Tracker</span>
             </div>
-            <button onClick={openNewEntry} style={{backgroundColor: currentTheme.accent, color: darkMode ? '#181C14' : '#ffffff', border:'none', padding:'6px 12px', borderRadius:'6px', fontSize:'12px'}}>+ Add</button>
+            <button onClick={openNewEntry} style={{backgroundColor: currentTheme.accent, color: darkMode ? '#141e2d' : '#ffffff', border:'none', padding:'6px 12px', borderRadius:'6px', fontSize:'12px'}}>+ Add</button>
         </div>
       )}
 
       <aside style={styles.sidebar}>
         <div style={{ padding: '24px', borderBottom: `1px solid ${currentTheme.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <h2 style={{ fontSize: '18px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '10px', margin: 0 }}>
-            <div style={{ background: currentTheme.accent, width: '28px', height: '28px', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: darkMode ? '#181C14' : '#ffffff', fontWeight: '900' }}>T</div>
+            <div style={{ background: currentTheme.accent, width: '28px', height: '28px', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: darkMode ? '#141e2d' : '#ffffff', fontWeight: '900' }}>T</div>
             <span style={{color: currentTheme.sidebarText, fontFamily: 'Circular, sans-serif', fontWeight: '900', letterSpacing:'-0.5px'}}>Tracker</span>
           </h2>
           <button onClick={() => setDarkMode(!darkMode)} style={{background:'transparent', border:'none', cursor:'pointer', color: currentTheme.sidebarText}}>
@@ -629,7 +622,7 @@ export default function App() {
       </aside>
       
       {isMobile && showMobileMenu && (
-        <div onClick={() => setShowMobileMenu(false)} style={{position:'fixed', inset:0, background:'rgba(0, 0, 0, 0.8)', zIndex:40}} />
+        <div onClick={() => setShowMobileMenu(false)} style={{position:'fixed', inset:0, background:'rgba(20, 30, 45, 0.8)', zIndex:40}} />
       )}
 
       <main style={styles.main}>
@@ -662,7 +655,7 @@ export default function App() {
                 
                 <div className="dashboard-grid">
                     <StatCard title="Total Lifetime Files" value={jobs.filter(j => j.status === 'Completed').length} icon={CheckCircle2} color={currentTheme.accent} theme={currentTheme} />
-                    <StatCard title="Pending Review" value={jobs.filter(j => j.status === 'Pending QA').length} icon={AlertCircle} color={darkMode ? '#9fe870' : '#c2410c'} theme={currentTheme} />
+                    <StatCard title="Pending Review" value={jobs.filter(j => j.status === 'Pending QA').length} icon={AlertCircle} color={darkMode ? '#79c142' : '#c2410c'} theme={currentTheme} />
                 </div>
 
                 <div style={{ background: currentTheme.cardBg, padding: '24px', borderRadius: '8px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)', border: `1px solid ${currentTheme.border}` }}><h3 style={{ fontWeight: '700', marginBottom: '20px', fontSize: '14px', textTransform:'uppercase', color: currentTheme.mutedText, letterSpacing:'1px' }}>Weekly Output (Minutes)</h3><div style={{ height: '250px' }}><ResponsiveContainer width="100%" height="100%"><BarChart data={chartData}><CartesianGrid strokeDasharray="3 3" vertical={false} stroke={currentTheme.border} /><XAxis dataKey="date" axisLine={false} tickLine={false} tickFormatter={(str) => new Date(str).toLocaleDateString(undefined, {weekday: 'short'})} /><YAxis axisLine={false} tickLine={false} /><Tooltip cursor={{fill: 'transparent'}} /><Bar dataKey="minutes" fill={currentTheme.accent} radius={[4, 4, 4, 4]} barSize={32} /></BarChart></ResponsiveContainer></div></div>
@@ -702,7 +695,7 @@ export default function App() {
                       setBillingStartDate(tempBillingStart); 
                       setBillingEndDate(tempBillingEnd);
                       setShowBillingModal(false); 
-                  }} style={{ width: '100%', marginTop: '10px', padding: '10px', background: currentTheme.accent, color: darkMode ? '#181C14' : '#ffffff', border: 'none', borderRadius: '50px', fontWeight: 'bold', cursor: 'pointer' }}>Save Changes</button>
+                  }} style={{ width: '100%', marginTop: '10px', padding: '10px', background: currentTheme.accent, color: darkMode ? '#141e2d' : '#ffffff', border: 'none', borderRadius: '50px', fontWeight: 'bold', cursor: 'pointer' }}>Save Changes</button>
                   <button onClick={() => setShowBillingModal(false)} style={{ width: '100%', marginTop: '10px', padding: '10px', background: 'transparent', color: currentTheme.text, border: 'none', fontWeight: 'bold', cursor: 'pointer' }}>Cancel</button>
                 </div>
               </div>
@@ -771,7 +764,7 @@ export default function App() {
                   <div style={{...styles.timerControls, flexDirection: isMobile ? 'column' : 'row'}}>
                     {!timerRunning ? (
                         <button onClick={handleTimerStartPause} style={{...styles.controlBtn, ...styles.startBtn}} disabled={totalTat === 0}>
-                            <Play size={16} fill={darkMode ? '#112600' : '#ffffff'} /> START TIMER
+                            <Play size={16} fill={darkMode ? '#141e2d' : '#ffffff'} /> START TIMER
                         </button>
                     ) : (
                         <button onClick={handleTimerStartPause} style={{...styles.controlBtn, ...styles.pauseBtn}}>
@@ -828,7 +821,7 @@ export default function App() {
                     </div>
                     <div style={{ marginBottom: '16px' }}><label style={styles.label}>Link</label><input type="url" style={styles.input} placeholder="https://..." value={formData.link} onChange={e => setFormData({...formData, link: e.target.value})} /></div>
                     <div style={{ marginBottom: '24px' }}><label style={styles.label}>Status</label><select style={styles.input} value={formData.status} onChange={e => setFormData({...formData, status: e.target.value})}><option>In Progress</option><option>Pending QA</option><option>Completed</option></select></div>
-                    <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}><button type="button" onClick={() => setShowEntryModal(false)} style={{ padding: '10px 16px', border: 'none', background: 'transparent', color: currentTheme.text, fontWeight: '600', cursor: 'pointer' }}>Cancel</button><button type="submit" style={{ padding: '10px 20px', border: 'none', background: currentTheme.accent, color: darkMode ? '#112600' : '#ffffff', borderRadius: '50px', fontWeight: '600', cursor: 'pointer', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.2)' }}>{loading ? 'Saving...' : 'Save Entry'}</button></div>
+                    <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}><button type="button" onClick={() => setShowEntryModal(false)} style={{ padding: '10px 16px', border: 'none', background: 'transparent', color: currentTheme.text, fontWeight: '600', cursor: 'pointer' }}>Cancel</button><button type="submit" style={{ padding: '10px 20px', border: 'none', background: currentTheme.accent, color: darkMode ? '#141e2d' : '#ffffff', borderRadius: '50px', fontWeight: '600', cursor: 'pointer', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.2)' }}>{loading ? 'Saving...' : 'Save Entry'}</button></div>
                   </form>
                 </div>
               </div>
@@ -839,7 +832,7 @@ export default function App() {
                 <div style={{ display: 'flex', flexWrap:'wrap', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', gap:'10px' }}>
                   {!isMobile && <div style={{display:'flex', alignItems:'center', gap:'16px'}}><h2 style={{ fontSize: '28px', fontWeight: '900', color: currentTheme.text, margin: '0', letterSpacing:'-1px' }}>File History</h2><button onClick={openNewEntry} style={styles.primaryBtn}><Plus size={16} /> ADD NEW</button></div>}
                   <div style={{ display: 'flex', flexDirection:'column', alignItems: 'flex-end', gap: '8px', width: isMobile ? '100%' : 'auto' }}>
-                    <div style={{ background: currentTheme.accent, color: darkMode ? '#112600' : '#ffffff', padding: '8px 12px', borderRadius: '50px', fontWeight: '700', fontSize: '13px', border: `1px solid ${currentTheme.border}`, display:'flex', gap:'8px', width: isMobile ? '100%' : 'auto', justifyContent: isMobile ? 'center' : 'flex-start' }}><span>Total: {formatDecimalHours(listTotalSeconds)}</span><span style={{opacity:0.6}}>|</span><span>{formatDuration(listTotalSeconds)}</span></div>
+                    <div style={{ background: currentTheme.accent, color: darkMode ? '#141e2d' : '#ffffff', padding: '8px 12px', borderRadius: '50px', fontWeight: '700', fontSize: '13px', border: `1px solid ${currentTheme.border}`, display:'flex', gap:'8px', width: isMobile ? '100%' : 'auto', justifyContent: isMobile ? 'center' : 'flex-start' }}><span>Total: {formatDecimalHours(listTotalSeconds)}</span><span style={{opacity:0.6}}>|</span><span>{formatDuration(listTotalSeconds)}</span></div>
                     <div style={{display:'flex', gap:'8px', alignItems:'center', flexWrap: 'wrap', width: isMobile ? '100%' : 'auto'}}>
                         {hasActiveFilters && (<button onClick={clearAllFilters} style={{display:'flex', alignItems:'center', gap:'4px', border:'none', background:'#fee2e2', color:'#ef4444', borderRadius:'50px', padding:'0 10px', height:'34px', cursor:'pointer', fontSize:'12px', fontWeight:'bold'}}><RotateCcw size={12} /> Clear</button>)}
                         <select value={filterType} onChange={(e) => setFilterType(e.target.value)} style={{padding: '8px', borderRadius: '50px', border: `1px solid ${currentTheme.border}`, fontSize: '13px', cursor:'pointer', backgroundColor: currentTheme.cardBg, height:'34px', flex: isMobile ? 1 : 'unset', color: currentTheme.text}}><option value="All">All Types</option><option value="Mantis">Mantis</option><option value="Cricket">Cricket</option></select>
