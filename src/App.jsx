@@ -604,7 +604,7 @@ export default function App() {
         <div style={{ padding: '16px', background: currentTheme.sidebarBg, borderBottom: `1px solid ${currentTheme.border}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', zIndex: 60 }}>
             <div style={{display:'flex', alignItems:'center', gap:'12px'}}>
                 <button onClick={() => setShowMobileMenu(!showMobileMenu)} style={{border:'none', background:'none'}}><Menu size={24} color={currentTheme.sidebarText}/></button>
-                <span style={{fontWeight:'bold', color: currentTheme.sidebarText}}>TrackScribe</span>
+                <span style={{fontWeight:'bold', color: currentTheme.sidebarText}}>Tracker</span>
             </div>
             <button onClick={openNewEntry} style={{backgroundColor: currentTheme.accent, color: darkMode ? '#181C14' : '#ffffff', border:'none', padding:'6px 12px', borderRadius:'6px', fontSize:'12px'}}>+ Add</button>
         </div>
@@ -614,7 +614,7 @@ export default function App() {
         <div style={{ padding: '24px', borderBottom: `1px solid ${currentTheme.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <h2 style={{ fontSize: '18px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '10px', margin: 0 }}>
             <div style={{ background: currentTheme.accent, width: '28px', height: '28px', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: darkMode ? '#181C14' : '#ffffff', fontWeight: '900' }}>T</div>
-            <span style={{color: currentTheme.sidebarText, fontFamily: 'Circular, sans-serif', fontWeight: '900', letterSpacing:'-0.5px'}}>TrackScribe</span>
+            <span style={{color: currentTheme.sidebarText, fontFamily: 'Circular, sans-serif', fontWeight: '900', letterSpacing:'-0.5px'}}>Tracker</span>
           </h2>
           <button onClick={() => setDarkMode(!darkMode)} style={{background:'transparent', border:'none', cursor:'pointer', color: currentTheme.sidebarText}}>
             {darkMode ? <Sun size={20}/> : <Moon size={20}/>}
