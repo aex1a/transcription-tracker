@@ -8,7 +8,7 @@ import {
   CheckCircle2, AlertCircle, Loader2, X, CalendarDays, Settings,
   ArrowUpDown, ArrowUp, ArrowDown, RotateCcw, GripVertical,
   Play, Pause, ArrowRight, Check, Menu, Download, Moon, Sun,
-  StickyNote // <--- IMPORTED NOTEPAD ICON
+  StickyNote, Save // Added Save icon
 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 
@@ -97,25 +97,29 @@ const formatDate = (dateString) => {
     });
 };
 
-// --- NEW COMPONENT: Typewriter Effect ---
+// --- Typewriter Effect ---
 const TypewriterText = ({ text, speed = 10 }) => {
   const [displayedText, setDisplayedText] = useState('');
 
   useEffect(() => {
     setDisplayedText('');
     let index = 0;
+    // Safety check if text is null/undefined
+    const safeText = text || ''; 
+    if (safeText.length === 0) return;
+
     const intervalId = setInterval(() => {
-      setDisplayedText((prev) => prev + text.charAt(index));
+      setDisplayedText((prev) => prev + safeText.charAt(index));
       index++;
-      if (index === text.length) {
+      if (index === safeText.length) {
         clearInterval(intervalId);
       }
-    }, speed); // Speed in ms
+    }, speed); 
 
     return () => clearInterval(intervalId);
   }, [text, speed]);
 
-  return <p style={{whiteSpace: 'pre-wrap', lineHeight: '1.6'}}>{displayedText}</p>;
+  return <p style={{whiteSpace: 'pre-wrap', lineHeight: '1.6', margin: 0}}>{displayedText}</p>;
 };
 
 
@@ -268,10 +272,13 @@ export default function App() {
   const [isEditing, setIsEditing] = useState(null);
   const [showEntryModal, setShowEntryModal] = useState(false); 
 
-  // --- NEW STATE for Note Modal ---
+  // --- STATE for Note Modal ---
   const [showNoteModal, setShowNoteModal] = useState(false);
+  const [isEditingNoteModal, setIsEditingNoteModal] = useState(false); // New: track if editing in modal
   const [viewNoteContent, setViewNoteContent] = useState('');
+  const [tempNoteContent, setTempNoteContent] = useState(''); // New: hold edits
   const [viewNoteTitle, setViewNoteTitle] = useState('');
+  const [noteModalJobId, setNoteModalJobId] = useState(null); // New: track ID for saving
 
   const [timerData, setTimerData] = useState({
     file_name: '', 
@@ -577,6 +584,34 @@ export default function App() {
   const requestSort = (key) => { let direction = 'asc'; if (sortConfig.key === key && sortConfig.direction === 'asc') direction = 'desc'; setSortConfig({ key, direction }); };
   const SortIcon = ({ column }) => { if (sortConfig.key !== column) return <ArrowUpDown size={14} style={{opacity:0.3}} />; return sortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />; };
 
+  // --- New function to open note modal ---
+  const handleOpenNoteModal = (job) => {
+      setViewNoteContent(job.notes);
+      setTempNoteContent(job.notes); // Initialize temp content
+      setViewNoteTitle(job.file_name);
+      setNoteModalJobId(job.id);
+      setIsEditingNoteModal(false); // Always start in view mode
+      setShowNoteModal(true);
+  }
+
+  // --- New function to save edited note from modal ---
+  const handleSaveNoteFromModal = async () => {
+      setLoading(true);
+      const { error } = await supabase
+          .from('jobs')
+          .update({ notes: tempNoteContent })
+          .eq('id', noteModalJobId);
+
+      if (error) {
+          alert('Error saving note: ' + error.message);
+      } else {
+          await fetchJobs(); // Refresh data
+          setViewNoteContent(tempNoteContent); // Update view content
+          setIsEditingNoteModal(false); // Go back to view mode
+      }
+      setLoading(false);
+  };
+
   const getBillingCycle = () => { 
     if (!billingStartDate || !billingEndDate) return { start: new Date(), end: new Date(), label: '' };
     const start = new Date(billingStartDate);
@@ -618,7 +653,8 @@ export default function App() {
     th: { backgroundColor: currentTheme.tableHeaderBg, color: currentTheme.tableHeaderText, padding: '12px 16px', textAlign: 'left', fontSize: '12px', fontWeight: '900', textTransform: 'uppercase', letterSpacing:'1px', borderBottom: `1px solid ${currentTheme.border}` },
     thClickable: { cursor: 'pointer', userSelect: 'none', display:'flex', alignItems:'center', gap:'6px' },
     td: { padding: '14px 16px', borderBottom: `1px solid ${currentTheme.border}`, fontSize: '14px', color: currentTheme.text },
-    tdWrapper: { width: '100%', height: '100%', whiteSpace: 'nowrap', overflowX: 'auto', overflowY: 'hidden', display: 'block' },
+    // UPDATED: Removed fixed height and display: block to fix spacing issue
+    tdWrapper: { width: '100%', whiteSpace: 'nowrap', overflowX: 'auto', overflowY: 'hidden', display: 'flex', alignItems: 'center' }, 
     radioLabel: { display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', cursor: 'pointer', padding: '10px', borderRadius: '8px', border: `1px solid ${currentTheme.border}`, backgroundColor: currentTheme.cardBg, color: currentTheme.text },
     radioActive: { backgroundColor: currentTheme.accent, borderColor: currentTheme.accent, color: darkMode ? '#141e2d' : '#ffffff', fontWeight: '700' },
     primaryBtn: { backgroundColor: currentTheme.accent, color: darkMode ? '#141e2d' : '#ffffff', padding: '8px 16px', borderRadius: '50px', border: 'none', fontWeight: '700', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', boxShadow: '0 2px 4px rgba(0, 0, 0, 0.3)', textTransform: 'uppercase', letterSpacing: '1px' },
@@ -649,6 +685,14 @@ export default function App() {
         .stat-title { font-size: 12px; font-weight: 700; text-transform: uppercase; margin-bottom: 4px; letter-spacing: 1px; }
         .stat-value { font-size: 28px; font-weight: 900; margin: 0; }
         .stat-icon { width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; }
+
+        /* NEW: Sparkle Animation */
+        @keyframes sparkle {
+            0% { opacity: 0.7; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.1); filter: brightness(1.3); }
+            100% { opacity: 0.7; transform: scale(1); }
+        }
+        .sparkle-icon { animation: sparkle 3s infinite ease-in-out; }
 
         @media (max-width: 768px) {
             .billing-stats-grid { grid-template-columns: 1fr; gap: 10px; }
@@ -888,7 +932,7 @@ export default function App() {
                     </div>
                     <div style={{ marginBottom: '16px' }}><label style={styles.label}>Link</label><input type="url" style={styles.input} placeholder="https://..." value={formData.link} onChange={e => setFormData({...formData, link: e.target.value})} /></div>
                     
-                    {/* ADDED: Notes Field */}
+                    {/* Notes Field */}
                     <div style={{ marginBottom: '16px' }}>
                         <label style={styles.label}>Notes</label>
                         <textarea 
@@ -906,22 +950,48 @@ export default function App() {
               </div>
             )}
 
-            {/* --- NEW NOTE VIEWING MODAL --- */}
+            {/* --- NEW NOTE VIEWING/EDITING MODAL --- */}
             {showNoteModal && (
               <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0, 0, 0, 0.7)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 101 }}>
                 <div style={{ backgroundColor: currentTheme.cardBg, borderRadius: '8px', width: '100%', maxWidth: '400px', border: `1px solid ${currentTheme.border}`, boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)', overflow: 'hidden' }}>
                   <div style={{ padding: '12px 16px', backgroundColor: currentTheme.accent, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: darkMode ? '#141e2d' : '#ffffff', fontWeight: 'bold' }}>
                        <StickyNote size={18} />
-                       <span style={{ fontSize: '14px' }}>Note for: {viewNoteTitle}</span>
+                       <span style={{ fontSize: '14px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '250px' }}>Note: {viewNoteTitle}</span>
                      </div>
-                     <button onClick={() => setShowNoteModal(false)} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: darkMode ? '#141e2d' : '#ffffff' }}><X size={18}/></button>
+                     <div style={{ display: 'flex', gap: '12px' }}>
+                        {/* Edit Toggle Button */}
+                        <button onClick={() => setIsEditingNoteModal(!isEditingNoteModal)} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: darkMode ? '#141e2d' : '#ffffff', opacity: isEditingNoteModal ? 1 : 0.7 }} title={isEditingNoteModal ? "View Note" : "Edit Note"}>
+                            <Edit2 size={18}/>
+                        </button>
+                        <button onClick={() => setShowNoteModal(false)} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: darkMode ? '#141e2d' : '#ffffff' }} title="Close">
+                            <X size={18}/>
+                        </button>
+                     </div>
                   </div>
+                  
                   <div style={{ padding: '24px', minHeight: '150px', color: currentTheme.text, fontFamily: 'monospace', fontSize: '14px' }}>
-                    <TypewriterText text={viewNoteContent} speed={15} /> 
+                    {isEditingNoteModal ? (
+                        // Editing Mode: Textarea
+                        <textarea 
+                            style={{...styles.input, minHeight: '150px', resize: 'vertical', fontFamily: 'monospace'}} 
+                            value={tempNoteContent} 
+                            onChange={(e) => setTempNoteContent(e.target.value)}
+                            autoFocus
+                        />
+                    ) : (
+                        // Viewing Mode: Faster Typewriter effect
+                        <TypewriterText text={viewNoteContent} speed={3} /> 
+                    )}
                   </div>
-                  <div style={{ padding: '12px', borderTop: `1px solid ${currentTheme.border}`, textAlign: 'right' }}>
-                    <button onClick={() => setShowNoteModal(false)} style={{ fontSize: '12px', fontWeight: 'bold', background: 'transparent', border: 'none', color: currentTheme.mutedText, cursor: 'pointer' }}>CLOSE</button>
+
+                  <div style={{ padding: '12px', borderTop: `1px solid ${currentTheme.border}`, display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
+                    {isEditingNoteModal && (
+                        <button onClick={handleSaveNoteFromModal} style={{ fontSize: '12px', fontWeight: 'bold', background: currentTheme.accent, border: 'none', color: darkMode ? '#141e2d' : '#ffffff', cursor: 'pointer', padding: '8px 16px', borderRadius: '50px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <Save size={14}/> SAVE
+                        </button>
+                    )}
+                    <button onClick={() => setShowNoteModal(false)} style={{ fontSize: '12px', fontWeight: 'bold', background: 'transparent', border: 'none', color: currentTheme.mutedText, cursor: 'pointer', padding: '8px' }}>CLOSE</button>
                   </div>
                 </div>
               </div>
@@ -962,21 +1032,22 @@ export default function App() {
                             {/* UPDATED: Pass created_at timestamp for time display */}
                             {formatDateWithTime(job.date, job.created_at)}
                           </td>
+                          {/* UPDATED: Fixed spacing issue by removing height:100% from wrapper style */}
                           <td style={{...styles.td, width: `${colWidth}px`, minWidth: `${colWidth}px`, maxWidth: `${colWidth}px`}}><div style={styles.tdWrapper} className="no-scrollbar" title={job.file_name}>{job.file_name}</div></td>
                           <td style={{...styles.td, display: isMobile ? 'none' : 'table-cell'}}>{job.client||'-'}</td>
                           <td style={{...styles.td, display: isMobile ? 'none' : 'table-cell', fontFamily: 'monospace', color: currentTheme.accent}}>{formatDuration(job.total_seconds)}</td>
                           <td style={{...styles.td, display: isMobile ? 'none' : 'table-cell', fontFamily: 'monospace', color: currentTheme.text}}>{formatDecimalHours(job.total_seconds)}</td>
                           <td style={styles.td}><StatusBadge status={job.status} darkMode={darkMode} /></td>
                           <td style={{...styles.td, display: isMobile ? 'none' : 'table-cell'}}>{job.link && <a href={job.link} target="_blank"><ExternalLink size={12} color={currentTheme.accent}/></a>}</td>
-                          <td style={{...styles.td, textAlign: 'right'}}>
-                            {/* NEW: Sticky Note Button */}
+                          {/* UPDATED: Added flex style for alignment and sparkle class to note icon */}
+                          <td style={{...styles.td, textAlign: 'right', display: 'flex', justifyContent: 'flex-end', alignItems: 'center', height: '100%'}}>
                             {job.notes && job.notes.trim() !== '' && (
                                 <button 
                                     title={`You noted: ${job.notes}`} 
-                                    onClick={() => { setViewNoteContent(job.notes); setViewNoteTitle(job.file_name); setShowNoteModal(true); }}
+                                    onClick={() => handleOpenNoteModal(job)}
                                     style={{background:'none', border:'none', cursor:'pointer', marginRight:'8px', color: currentTheme.text}}
                                 >
-                                    <StickyNote size={16}/>
+                                    <StickyNote size={16} className="sparkle-icon"/>
                                 </button>
                             )}
                             <button onClick={() => handleEdit(job)} style={{background:'none', border:'none', cursor:'pointer', marginRight:'8px', color: currentTheme.accent}}><Edit2 size={16}/></button>
