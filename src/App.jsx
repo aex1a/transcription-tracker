@@ -860,6 +860,18 @@ export default function App() {
                       <div><label style={styles.label}>Date</label><input type="date" style={styles.input} value={formData.date} onChange={e => setFormData({...formData, date: e.target.value})} /></div>
                     </div>
                     <div style={{ marginBottom: '16px' }}><label style={styles.label}>Link</label><input type="url" style={styles.input} placeholder="https://..." value={formData.link} onChange={e => setFormData({...formData, link: e.target.value})} /></div>
+                    
+                    {/* ADDED: Notes Field */}
+                    <div style={{ marginBottom: '16px' }}>
+                        <label style={styles.label}>Notes</label>
+                        <textarea 
+                            style={{...styles.input, minHeight: '80px', resize: 'vertical'}} 
+                            placeholder="Details about this file (e.g., audio issues, delays)..." 
+                            value={formData.notes || ''} 
+                            onChange={e => setFormData({...formData, notes: e.target.value})} 
+                        />
+                    </div>
+
                     <div style={{ marginBottom: '24px' }}><label style={styles.label}>Status</label><select style={styles.input} value={formData.status} onChange={e => setFormData({...formData, status: e.target.value})}><option>In Progress</option><option>Pending QA</option><option>Completed</option></select></div>
                     <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}><button type="button" onClick={() => setShowEntryModal(false)} style={{ padding: '10px 16px', border: 'none', background: 'transparent', color: currentTheme.text, fontWeight: '600', cursor: 'pointer' }}>Cancel</button><button type="submit" style={{ padding: '10px 20px', border: 'none', background: currentTheme.accent, color: darkMode ? '#141e2d' : '#ffffff', borderRadius: '50px', fontWeight: '600', cursor: 'pointer', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.2)' }}>{loading ? 'Saving...' : 'Save Entry'}</button></div>
                   </form>
