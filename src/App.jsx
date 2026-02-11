@@ -7,7 +7,8 @@ import {
   Trash2, Edit2, ExternalLink, Search, 
   CheckCircle2, AlertCircle, Loader2, X, CalendarDays, Settings,
   ArrowUpDown, ArrowUp, ArrowDown, RotateCcw, GripVertical,
-  Play, Pause, ArrowRight, Check, Menu, Download, Moon, Sun
+  Play, Pause, ArrowRight, Check, Menu, Download, Moon, Sun,
+  StickyNote // <--- IMPORTED NOTEPAD ICON
 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 
@@ -94,6 +95,27 @@ const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString('en-US', {
       month: 'short', day: 'numeric', year: 'numeric'
     });
+};
+
+// --- NEW COMPONENT: Typewriter Effect ---
+const TypewriterText = ({ text, speed = 10 }) => {
+  const [displayedText, setDisplayedText] = useState('');
+
+  useEffect(() => {
+    setDisplayedText('');
+    let index = 0;
+    const intervalId = setInterval(() => {
+      setDisplayedText((prev) => prev + text.charAt(index));
+      index++;
+      if (index === text.length) {
+        clearInterval(intervalId);
+      }
+    }, speed); // Speed in ms
+
+    return () => clearInterval(intervalId);
+  }, [text, speed]);
+
+  return <p style={{whiteSpace: 'pre-wrap', lineHeight: '1.6'}}>{displayedText}</p>;
 };
 
 
@@ -245,6 +267,11 @@ export default function App() {
   });
   const [isEditing, setIsEditing] = useState(null);
   const [showEntryModal, setShowEntryModal] = useState(false); 
+
+  // --- NEW STATE for Note Modal ---
+  const [showNoteModal, setShowNoteModal] = useState(false);
+  const [viewNoteContent, setViewNoteContent] = useState('');
+  const [viewNoteTitle, setViewNoteTitle] = useState('');
 
   const [timerData, setTimerData] = useState({
     file_name: '', 
@@ -879,6 +906,27 @@ export default function App() {
               </div>
             )}
 
+            {/* --- NEW NOTE VIEWING MODAL --- */}
+            {showNoteModal && (
+              <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0, 0, 0, 0.7)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 101 }}>
+                <div style={{ backgroundColor: currentTheme.cardBg, borderRadius: '8px', width: '100%', maxWidth: '400px', border: `1px solid ${currentTheme.border}`, boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)', overflow: 'hidden' }}>
+                  <div style={{ padding: '12px 16px', backgroundColor: currentTheme.accent, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: darkMode ? '#141e2d' : '#ffffff', fontWeight: 'bold' }}>
+                       <StickyNote size={18} />
+                       <span style={{ fontSize: '14px' }}>Note for: {viewNoteTitle}</span>
+                     </div>
+                     <button onClick={() => setShowNoteModal(false)} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: darkMode ? '#141e2d' : '#ffffff' }}><X size={18}/></button>
+                  </div>
+                  <div style={{ padding: '24px', minHeight: '150px', color: currentTheme.text, fontFamily: 'monospace', fontSize: '14px' }}>
+                    <TypewriterText text={viewNoteContent} speed={15} /> 
+                  </div>
+                  <div style={{ padding: '12px', borderTop: `1px solid ${currentTheme.border}`, textAlign: 'right' }}>
+                    <button onClick={() => setShowNoteModal(false)} style={{ fontSize: '12px', fontWeight: 'bold', background: 'transparent', border: 'none', color: currentTheme.mutedText, cursor: 'pointer' }}>CLOSE</button>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {view === 'list' && (
               <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
                 <div style={{ display: 'flex', flexWrap:'wrap', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', gap:'10px' }}>
@@ -920,7 +968,21 @@ export default function App() {
                           <td style={{...styles.td, display: isMobile ? 'none' : 'table-cell', fontFamily: 'monospace', color: currentTheme.text}}>{formatDecimalHours(job.total_seconds)}</td>
                           <td style={styles.td}><StatusBadge status={job.status} darkMode={darkMode} /></td>
                           <td style={{...styles.td, display: isMobile ? 'none' : 'table-cell'}}>{job.link && <a href={job.link} target="_blank"><ExternalLink size={12} color={currentTheme.accent}/></a>}</td>
-                          <td style={{...styles.td, textAlign: 'right'}}><button onClick={() => handleEdit(job)} style={{background:'none', border:'none', cursor:'pointer', marginRight:'8px', color: currentTheme.accent}}><Edit2 size={16}/></button><button onClick={() => handleDelete(job.id)} style={{background:'none', border:'none', cursor:'pointer', color:'#ef4444'}}><Trash2 size={16}/></button></td></tr>)) : (<tr><td colSpan="7" style={{padding:'24px', textAlign:'center', color:'#94a3b8'}}>No files match your filters.</td></tr>)}
+                          <td style={{...styles.td, textAlign: 'right'}}>
+                            {/* NEW: Sticky Note Button */}
+                            {job.notes && job.notes.trim() !== '' && (
+                                <button 
+                                    title={`You noted: ${job.notes}`} 
+                                    onClick={() => { setViewNoteContent(job.notes); setViewNoteTitle(job.file_name); setShowNoteModal(true); }}
+                                    style={{background:'none', border:'none', cursor:'pointer', marginRight:'8px', color: currentTheme.text}}
+                                >
+                                    <StickyNote size={16}/>
+                                </button>
+                            )}
+                            <button onClick={() => handleEdit(job)} style={{background:'none', border:'none', cursor:'pointer', marginRight:'8px', color: currentTheme.accent}}><Edit2 size={16}/></button>
+                            <button onClick={() => handleDelete(job.id)} style={{background:'none', border:'none', cursor:'pointer', color:'#ef4444'}}><Trash2 size={16}/></button>
+                          </td>
+                        </tr>)) : (<tr><td colSpan="7" style={{padding:'24px', textAlign:'center', color:'#94a3b8'}}>No files match your filters.</td></tr>)}
                     </tbody>
                   </table>
                 </div>
