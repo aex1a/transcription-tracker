@@ -243,7 +243,7 @@ export default function App() {
 
   const [sortConfig, setSortConfig] = useState({ key: 'date', direction: 'desc' });
   // CHANGED: Reduced initial column width to 150 (was 250) to lessen space
-  const [colWidth, setColWidth] = useState(150); 
+  const [colWidth, setColWidth] = useState(100); 
   const resizingRef = useRef(false);
 
   const [billingStartDate, setBillingStartDate] = useState(() => localStorage.getItem('billingStartDate') || new Date().toISOString().split('T')[0]);
