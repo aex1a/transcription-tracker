@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from './supabase'; 
 import { Analytics } from "@vercel/analytics/react"; 
-import { SpeedInsights } from "@vercel/speed-insights/next";
+import { SpeedInsights } from "@vercel/speed-insights/react";
 import XLSX from 'xlsx-js-style'; 
 import { 
   LayoutDashboard, Plus, List, Timer, 
