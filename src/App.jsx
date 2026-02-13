@@ -1086,6 +1086,7 @@ export default function App() {
       </main>
       
       <Analytics />
+      <SpeedInsights />
     </div>
   );
 }
