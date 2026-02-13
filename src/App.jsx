@@ -126,16 +126,16 @@ const TypewriterText = ({ text, speed = 10 }) => {
 // --- Color Themes ---
 const themes = {
   light: {
-    bg: '#191414',           
-    text: '#ffffff',         
+    bg: '#191414',            
+    text: '#ffffff',          
     mutedText: '#b3b3b3',
-    sidebarBg: '#ffffff',    
+    sidebarBg: '#ffffff',     
     sidebarText: '#191414',
     sidebarActiveBg: '#f0f0f0', 
     sidebarActiveText: '#191414',
-    cardBg: '#212121',       
-    border: '#535353',       
-    accent: '#1db954',       
+    cardBg: '#212121',        
+    border: '#535353',        
+    accent: '#1db954',        
     accentSec: '#ffffff',
     tableHeaderBg: '#1db954',
     tableHeaderText: '#ffffff',
@@ -143,16 +143,16 @@ const themes = {
     statCardShadow: '0 4px 12px rgba(0,0,0,0.5)'
   },
   dark: {
-    bg: '#141e2d',           
-    text: '#ffffff',         
+    bg: '#141e2d',            
+    text: '#ffffff',          
     mutedText: '#9ca3af',
-    sidebarBg: '#ffffff',    
-    sidebarText: '#212529',  
+    sidebarBg: '#ffffff',     
+    sidebarText: '#212529',   
     sidebarActiveBg: '#79c142', 
     sidebarActiveText: '#ffffff', 
-    cardBg: '#212529',       
-    border: '#79c142',       
-    accent: '#79c142',       
+    cardBg: '#212529',        
+    border: '#79c142',        
+    accent: '#79c142',        
     accentSec: '#ffffff',
     tableHeaderBg: '#212529', 
     tableHeaderText: '#79c142', 
@@ -630,7 +630,28 @@ export default function App() {
   });
   
   const cycleSecs = cycleJobs.reduce((acc, curr) => acc + (curr.total_seconds || 0), 0);
-  const filteredJobs = jobs.filter(j => { const matchesSearch = j.file_name.toLowerCase().includes(searchTerm.toLowerCase()); const matchesDate = filterDate ? j.date === filterDate : true; const matchesType = filterType === 'All' ? true : (j.client === filterType); return matchesSearch && matchesDate && matchesType; });
+
+  // --- MODIFIED: FILTER LOGIC TO RESPECT BILLING DATES BY DEFAULT ---
+  const filteredJobs = jobs.filter(j => { 
+    const matchesSearch = j.file_name.toLowerCase().includes(searchTerm.toLowerCase()); 
+    const matchesType = filterType === 'All' ? true : (j.client === filterType); 
+    
+    // New Logic: If no specific date selected in list view, use Billing Cycle Range
+    let matchesDate = true;
+    if (filterDate) {
+        matchesDate = j.date === filterDate;
+    } else {
+        // Fallback to billing cycle
+        const d = new Date(j.date); d.setHours(0,0,0,0);
+        const s = new Date(billingStartDate); s.setHours(0,0,0,0);
+        const e = new Date(billingEndDate); e.setHours(23,59,59,999);
+        matchesDate = d >= s && d <= e;
+    }
+
+    return matchesSearch && matchesDate && matchesType; 
+  });
+  // ------------------------------------------------------------------
+
   const listTotalSeconds = filteredJobs.reduce((acc, job) => acc + (job.total_seconds || 0), 0);
   const sortedJobs = [...filteredJobs].sort((a, b) => { if (sortConfig.key === 'date') { return sortConfig.direction === 'asc' ? new Date(a.date) - new Date(b.date) : new Date(b.date) - new Date(a.date); } if (sortConfig.key === 'client') { const valA = (a.client || '').toLowerCase(); const valB = (b.client || '').toLowerCase(); if (valA < valB) return sortConfig.direction === 'asc' ? -1 : 1; if (valA > valB) return sortConfig.direction === 'asc' ? 1 : -1; return 0; } if (sortConfig.key === 'status') { const statusOrder = { 'In Progress': 1, 'Pending QA': 2, 'Completed': 3 }; const valA = statusOrder[a.status] || 99; const valB = statusOrder[b.status] || 99; return sortConfig.direction === 'asc' ? valA - valB : valB - valA; } return 0; });
   const chartData = jobs.reduce((acc, job) => { const d = job.date; const f = acc.find(i => i.date === d); const m = Math.floor((job.total_seconds || 0) / 60); if (f) f.minutes += m; else acc.push({ date: d, minutes: m }); return acc; }, []).sort((a, b) => new Date(a.date) - new Date(b.date)).slice(-7);
@@ -955,11 +976,11 @@ export default function App() {
               <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0, 0, 0, 0.7)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 101 }}>
                 <div style={{ backgroundColor: currentTheme.cardBg, borderRadius: '8px', width: '100%', maxWidth: '400px', border: `1px solid ${currentTheme.border}`, boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)', overflow: 'hidden' }}>
                   <div style={{ padding: '12px 16px', backgroundColor: currentTheme.accent, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: darkMode ? '#141e2d' : '#ffffff', fontWeight: 'bold' }}>
-                       <StickyNote size={18} />
-                       <span style={{ fontSize: '14px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '250px' }}>Note: {viewNoteTitle}</span>
-                     </div>
-                     <div style={{ display: 'flex', gap: '12px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: darkMode ? '#141e2d' : '#ffffff', fontWeight: 'bold' }}>
+                        <StickyNote size={18} />
+                        <span style={{ fontSize: '14px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '250px' }}>Note: {viewNoteTitle}</span>
+                      </div>
+                      <div style={{ display: 'flex', gap: '12px' }}>
                         {/* Edit Toggle Button */}
                         <button onClick={() => setIsEditingNoteModal(!isEditingNoteModal)} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: darkMode ? '#141e2d' : '#ffffff', opacity: isEditingNoteModal ? 1 : 0.7 }} title={isEditingNoteModal ? "View Note" : "Edit Note"}>
                             <Edit2 size={18}/>
@@ -967,7 +988,7 @@ export default function App() {
                         <button onClick={() => setShowNoteModal(false)} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: darkMode ? '#141e2d' : '#ffffff' }} title="Close">
                             <X size={18}/>
                         </button>
-                     </div>
+                      </div>
                   </div>
                   
                   <div style={{ padding: '24px', minHeight: '150px', color: currentTheme.text, fontFamily: 'monospace', fontSize: '14px' }}>
