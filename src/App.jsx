@@ -9,7 +9,7 @@ import {
   CheckCircle2, AlertCircle, Loader2, X, CalendarDays, Settings,
   ArrowUpDown, ArrowUp, ArrowDown, RotateCcw, GripVertical,
   Play, Pause, ArrowRight, Check, Menu, Download, Moon, Sun,
-  StickyNote, Save // Added Save icon
+  StickyNote, Save 
 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 
@@ -89,13 +89,6 @@ const formatDateWithTime = (dateString, timestamp) => {
       <div style={{fontSize: '10px', opacity: 0.6}}>EST: {estTime}</div>
     </div>
   );
-};
-
-const formatDate = (dateString) => {
-    if (!dateString) return '';
-    return new Date(dateString).toLocaleDateString('en-US', {
-      month: 'short', day: 'numeric', year: 'numeric'
-    });
 };
 
 // --- Typewriter Effect ---
@@ -249,7 +242,8 @@ export default function App() {
   const [filterType, setFilterType] = useState('All'); 
 
   const [sortConfig, setSortConfig] = useState({ key: 'date', direction: 'desc' });
-  const [colWidth, setColWidth] = useState(250); 
+  // CHANGED: Reduced initial column width to 150 (was 250) to lessen space
+  const [colWidth, setColWidth] = useState(150); 
   const resizingRef = useRef(false);
 
   const [billingStartDate, setBillingStartDate] = useState(() => localStorage.getItem('billingStartDate') || new Date().toISOString().split('T')[0]);
@@ -275,11 +269,11 @@ export default function App() {
 
   // --- STATE for Note Modal ---
   const [showNoteModal, setShowNoteModal] = useState(false);
-  const [isEditingNoteModal, setIsEditingNoteModal] = useState(false); // New: track if editing in modal
+  const [isEditingNoteModal, setIsEditingNoteModal] = useState(false); 
   const [viewNoteContent, setViewNoteContent] = useState('');
-  const [tempNoteContent, setTempNoteContent] = useState(''); // New: hold edits
+  const [tempNoteContent, setTempNoteContent] = useState(''); 
   const [viewNoteTitle, setViewNoteTitle] = useState('');
-  const [noteModalJobId, setNoteModalJobId] = useState(null); // New: track ID for saving
+  const [noteModalJobId, setNoteModalJobId] = useState(null); 
 
   const [timerData, setTimerData] = useState({
     file_name: '', 
@@ -632,17 +626,15 @@ export default function App() {
   
   const cycleSecs = cycleJobs.reduce((acc, curr) => acc + (curr.total_seconds || 0), 0);
 
-  // --- MODIFIED: FILTER LOGIC TO RESPECT BILLING DATES BY DEFAULT ---
+  // --- FILTER LOGIC ---
   const filteredJobs = jobs.filter(j => { 
     const matchesSearch = j.file_name.toLowerCase().includes(searchTerm.toLowerCase()); 
     const matchesType = filterType === 'All' ? true : (j.client === filterType); 
     
-    // New Logic: If no specific date selected in list view, use Billing Cycle Range
     let matchesDate = true;
     if (filterDate) {
         matchesDate = j.date === filterDate;
     } else {
-        // Fallback to billing cycle
         const d = new Date(j.date); d.setHours(0,0,0,0);
         const s = new Date(billingStartDate); s.setHours(0,0,0,0);
         const e = new Date(billingEndDate); e.setHours(23,59,59,999);
@@ -656,6 +648,9 @@ export default function App() {
   const listTotalSeconds = filteredJobs.reduce((acc, job) => acc + (job.total_seconds || 0), 0);
   const sortedJobs = [...filteredJobs].sort((a, b) => { if (sortConfig.key === 'date') { return sortConfig.direction === 'asc' ? new Date(a.date) - new Date(b.date) : new Date(b.date) - new Date(a.date); } if (sortConfig.key === 'client') { const valA = (a.client || '').toLowerCase(); const valB = (b.client || '').toLowerCase(); if (valA < valB) return sortConfig.direction === 'asc' ? -1 : 1; if (valA > valB) return sortConfig.direction === 'asc' ? 1 : -1; return 0; } if (sortConfig.key === 'status') { const statusOrder = { 'In Progress': 1, 'Pending QA': 2, 'Completed': 3 }; const valA = statusOrder[a.status] || 99; const valB = statusOrder[b.status] || 99; return sortConfig.direction === 'asc' ? valA - valB : valB - valA; } return 0; });
   const chartData = jobs.reduce((acc, job) => { const d = job.date; const f = acc.find(i => i.date === d); const m = Math.floor((job.total_seconds || 0) / 60); if (f) f.minutes += m; else acc.push({ date: d, minutes: m }); return acc; }, []).sort((a, b) => new Date(a.date) - new Date(b.date)).slice(-7);
+
+  // Calculate completed count for the current filter
+  const completedCount = sortedJobs.filter(j => j.status === 'Completed').length;
 
   const styles = {
     container: { fontFamily: '"Circular", "Helvetica Neue", "Helvetica", "Arial", sans-serif', backgroundColor: currentTheme.bg, minHeight: '100vh', display: 'flex', flexDirection: 'column' },
@@ -707,14 +702,6 @@ export default function App() {
         .stat-title { font-size: 12px; font-weight: 700; text-transform: uppercase; margin-bottom: 4px; letter-spacing: 1px; }
         .stat-value { font-size: 28px; font-weight: 900; margin: 0; }
         .stat-icon { width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; }
-
-        /* NEW: Sparkle Animation */
-        @keyframes sparkle {
-            0% { opacity: 0.7; transform: scale(1); }
-            50% { opacity: 1; transform: scale(1.1); filter: brightness(1.3); }
-            100% { opacity: 0.7; transform: scale(1); }
-        }
-        .sparkle-icon { animation: sparkle 3s infinite ease-in-out; }
 
         @media (max-width: 768px) {
             .billing-stats-grid { grid-template-columns: 1fr; gap: 10px; }
@@ -1033,10 +1020,19 @@ export default function App() {
                     </div>
                   </div>
                 </div>
+
+                {/* --- ADDED SUMMARY TEXT LEFT OF DATE AREA --- */}
+                <div style={{marginBottom: '8px', paddingLeft: '8px', fontSize: '13px', fontWeight: 'bold', color: currentTheme.accent, display: 'flex', gap: '15px'}}>
+                   <span>{sortedJobs.length} Files Found</span>
+                   {completedCount > 0 && <span style={{opacity: 0.8}}>({completedCount} Completed)</span>}
+                </div>
+
                 <div style={{ overflowX: 'auto', borderRadius: '8px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)', border: `1px solid ${currentTheme.border}` }}>
                   <table style={styles.table}>
                     <thead>
                       <tr>
+                        {/* --- ADDED ROW NUMBER HEADER --- */}
+                        <th style={{...styles.th, width: '40px', textAlign: 'center'}}>#</th>
                         <th style={styles.th} onClick={() => requestSort('date')}><div style={styles.thClickable}>Date <SortIcon column="date" /></div></th>
                         <th style={{...styles.th, width: `${colWidth}px`, position: 'relative'}}><div style={{display:'flex', justifyContent:'space-between', alignItems:'center'}}>File Name<GripVertical size={14} style={{color: currentTheme.text, marginRight:'4px', opacity: 0.7}} /></div><div onMouseDown={startResizing} style={{position:'absolute', right:0, top:0, bottom:0, width:'8px', cursor:'col-resize', zIndex:10, display:'flex', alignItems:'center', justifyContent:'center'}}><div style={{width:'2px', height:'100%', backgroundColor: currentTheme.text, opacity: 0.3}} /></div></th>
                         <th style={{...styles.th, display: isMobile ? 'none' : 'table-cell'}} onClick={() => requestSort('client')}><div style={styles.thClickable}>Type <SortIcon column="client" /></div></th>
@@ -1048,8 +1044,10 @@ export default function App() {
                       </tr>
                     </thead>
                     <tbody>
-                      {sortedJobs.length > 0 ? sortedJobs.map(job => (
+                      {sortedJobs.length > 0 ? sortedJobs.map((job, index) => (
                         <tr key={job.id} style={{ borderBottom: `1px solid ${currentTheme.border}`, backgroundColor: job.file_name.startsWith('Unnamed File') ? currentTheme.unnamedRowBg : currentTheme.cardBg }}>
+                          {/* --- ADDED ROW NUMBER CELL --- */}
+                          <td style={{...styles.td, textAlign: 'center', opacity: 0.5, fontSize: '12px'}}>{index + 1}</td>
                           <td style={styles.td}>
                             {/* UPDATED: Pass created_at timestamp for time display */}
                             {formatDateWithTime(job.date, job.created_at)}
@@ -1061,7 +1059,7 @@ export default function App() {
                           <td style={{...styles.td, display: isMobile ? 'none' : 'table-cell', fontFamily: 'monospace', color: currentTheme.text}}>{formatDecimalHours(job.total_seconds)}</td>
                           <td style={styles.td}><StatusBadge status={job.status} darkMode={darkMode} /></td>
                           <td style={{...styles.td, display: isMobile ? 'none' : 'table-cell'}}>{job.link && <a href={job.link} target="_blank"><ExternalLink size={12} color={currentTheme.accent}/></a>}</td>
-                          {/* UPDATED: Added flex style for alignment and sparkle class to note icon */}
+                          {/* UPDATED: Added flex style for alignment and REMOVED sparkle class */}
                           <td style={{...styles.td, textAlign: 'right', display: 'flex', justifyContent: 'flex-end', alignItems: 'center', height: '100%'}}>
                             {job.notes && job.notes.trim() !== '' && (
                                 <button 
@@ -1069,13 +1067,13 @@ export default function App() {
                                     onClick={() => handleOpenNoteModal(job)}
                                     style={{background:'none', border:'none', cursor:'pointer', marginRight:'8px', color: currentTheme.text}}
                                 >
-                                    <StickyNote size={16} className="sparkle-icon"/>
+                                    <StickyNote size={16}/>
                                 </button>
                             )}
                             <button onClick={() => handleEdit(job)} style={{background:'none', border:'none', cursor:'pointer', marginRight:'8px', color: currentTheme.accent}}><Edit2 size={16}/></button>
                             <button onClick={() => handleDelete(job.id)} style={{background:'none', border:'none', cursor:'pointer', color:'#ef4444'}}><Trash2 size={16}/></button>
                           </td>
-                        </tr>)) : (<tr><td colSpan="7" style={{padding:'24px', textAlign:'center', color:'#94a3b8'}}>No files match your filters.</td></tr>)}
+                        </tr>)) : (<tr><td colSpan="8" style={{padding:'24px', textAlign:'center', color:'#94a3b8'}}>No files match your filters.</td></tr>)}
                     </tbody>
                   </table>
                 </div>
